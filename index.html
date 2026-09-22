@@ -169,6 +169,10 @@ tr:last-child td{border-bottom:none;}
 .mobile-brand{display:none;}
 @media (max-width:760px){
   .app{flex-direction:column;}
+  .grid{grid-template-columns:repeat(2,1fr);gap:10px;}
+  .stat-card{padding:12px 10px;}
+  .stat-card .num{font-size:22px;}
+  .stat-card .lbl{font-size:11.5px;}
   .mobile-brand{
     display:flex;align-items:center;justify-content:center;gap:8px;
     padding:10px 14px calc(10px + env(safe-area-inset-top,0px));
