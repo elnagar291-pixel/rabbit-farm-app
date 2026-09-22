@@ -1,0 +1,1504 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>مزرعتي - إدارة الأرانب</title>
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="manifest" href="manifest.json">
+<style>
+:root{
+  box-sizing:border-box;
+  --bg:#F3F7F1;
+  --surface:#FFFFFF;
+  --primary:#4CAF82;
+  --primary-dark:#2E7D5B;
+  --primary-tint:#E3F4EB;
+  --ink:#1F2B24;
+  --muted:#6B7A72;
+  --alert:#C77B4A;
+  --alert-tint:#FBEEE4;
+  --danger:#C0524A;
+  --line:#DCE6DF;
+  --radius:14px;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+:root:not([data-theme="light"]){ }
+*{box-sizing:border-box;}
+html,body{height:100%;margin:0;}
+body{
+  font-family:'Cairo',system-ui,sans-serif;
+  background:var(--bg);
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+.app{display:flex;min-height:100vh;}
+
+/* ===== Sidebar ===== */
+.sidebar{
+  width:230px;flex:0 0 230px;
+  background:var(--primary-dark);
+  color:#fff;
+  padding:22px 16px;
+  position:sticky;top:0;height:100vh;overflow-y:auto;
+}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:26px;padding:0 6px;}
+.brand-mark{width:36px;height:36px;border-radius:10px;background:var(--primary);display:flex;align-items:center;justify-content:center;font-size:18px;flex:0 0 36px;}
+.brand-text{font-weight:800;font-size:17px;line-height:1.2;}
+.brand-sub{font-size:11px;opacity:.75;font-weight:400;}
+nav{display:flex;flex-direction:column;gap:4px;}
+.nav-item{
+  display:flex;align-items:center;gap:10px;
+  padding:11px 12px;border-radius:10px;
+  color:#EAF5EF;text-decoration:none;font-size:14.5px;font-weight:600;
+  cursor:pointer;border:none;background:transparent;text-align:right;width:100%;
+  transition:background .15s;
+}
+.nav-item .ico{font-size:16px;width:20px;text-align:center;}
+.nav-item:hover{background:rgba(255,255,255,.08);}
+.nav-item.active{background:var(--primary);color:#fff;}
+.nav-badge{margin-right:auto;background:var(--alert);color:#fff;font-size:11px;font-weight:800;border-radius:20px;padding:1px 7px;min-width:18px;text-align:center;}
+
+/* ===== Main ===== */
+main{flex:1;padding:26px 30px 60px;max-width:100%;overflow-x:hidden;}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;flex-wrap:wrap;gap:12px;}
+.topbar h1{font-size:22px;font-weight:800;margin:0;}
+.topbar p{margin:2px 0 0;color:var(--muted);font-size:13.5px;}
+.btn{
+  display:inline-flex;align-items:center;gap:6px;
+  background:var(--primary);color:#fff;border:none;
+  padding:10px 18px;border-radius:10px;font-family:inherit;
+  font-weight:700;font-size:14px;cursor:pointer;transition:background .15s, transform .1s;
+}
+.btn:hover{background:var(--primary-dark);}
+.btn:active{transform:scale(.97);}
+.btn.secondary{background:var(--surface);color:var(--primary-dark);border:1.5px solid var(--line);}
+.btn.secondary:hover{background:var(--primary-tint);}
+.btn.danger-outline{background:#fff;color:var(--danger);border:1.5px solid #EAD1CE;}
+.btn.danger-outline:hover{background:#FBEFEE;}
+.btn.small{padding:6px 12px;font-size:13px;}
+
+/* ===== Cards / grid ===== */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;margin-bottom:8px;}
+.stat-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;}
+.stat-card .num{font-size:26px;font-weight:800;color:var(--primary-dark);}
+.stat-card .lbl{font-size:13px;color:var(--muted);margin-top:2px;}
+
+.section{margin-top:30px;}
+.section-title{font-size:15px;font-weight:800;margin:0 0 12px;display:flex;align-items:center;gap:8px;}
+
+.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;}
+.rabbit-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;cursor:pointer;transition:box-shadow .15s,transform .1s;}
+.rabbit-card:hover{box-shadow:0 6px 18px rgba(46,125,91,.14);transform:translateY(-2px);}
+.rabbit-photo{width:100%;height:130px;background:var(--primary-tint) center/cover no-repeat;display:flex;align-items:center;justify-content:center;color:var(--primary-dark);font-size:34px;}
+.rabbit-body{padding:12px 14px;}
+.rabbit-name{font-weight:800;font-size:15px;margin-bottom:2px;}
+.rabbit-meta{font-size:12.5px;color:var(--muted);}
+
+.mother-row{display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 14px;margin-bottom:10px;cursor:pointer;transition:box-shadow .15s;}
+.mother-row:hover{box-shadow:0 4px 14px rgba(46,125,91,.12);}
+.mother-row-photo{width:52px;height:52px;border-radius:12px;flex:0 0 52px;background:var(--primary-tint) center/cover no-repeat;display:flex;align-items:center;justify-content:center;color:var(--primary-dark);font-size:22px;}
+.mother-row-info{flex:1;min-width:0;}
+.mother-row-name{font-weight:800;font-size:19px;}
+.mother-row-meta{font-size:14px;color:var(--muted);margin-top:2px;}
+.chip{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;margin-top:8px;}
+.chip.ok{background:var(--primary-tint);color:var(--primary-dark);}
+.chip.alert{background:var(--alert-tint);color:var(--alert);}
+.status-chip{display:inline-block;font-size:12px;font-weight:800;padding:3px 11px;border-radius:20px;}
+.status-chip.ok{background:var(--primary-tint);color:var(--primary-dark);}
+.status-chip.alert{background:var(--alert-tint);color:var(--alert);}
+.mini-link-row{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin-bottom:8px;cursor:pointer;}
+.mini-link-row .avatar{width:38px;height:38px;border-radius:10px;background:var(--primary-tint) center/cover no-repeat;flex:0 0 38px;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--primary-dark);}
+
+.empty{background:var(--surface);border:1.5px dashed var(--line);border-radius:var(--radius);padding:36px 20px;text-align:center;color:var(--muted);font-size:14px;}
+
+/* ===== Alerts feed ===== */
+.alert-item{
+  display:flex;gap:12px;align-items:flex-start;
+  background:var(--surface);border:1px solid var(--line);border-right:4px solid var(--alert);
+  border-radius:12px;padding:12px 14px;margin-bottom:10px;
+}
+.alert-item .ico{font-size:18px;}
+.alert-item .txt{flex:1;font-size:13.5px;line-height:1.5;}
+.alert-item .txt b{font-weight:800;}
+.alert-item .date{font-size:12px;color:var(--muted);margin-top:2px;}
+.alert-actions{display:flex;gap:6px;margin-top:8px;}
+
+/* ===== Modal / form ===== */
+.overlay{position:fixed;inset:0;background:rgba(20,30,24,.45);display:none;align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto;z-index:50;}
+.overlay.open{display:flex;}
+.modal{background:var(--surface);border-radius:16px;width:100%;max-width:560px;padding:22px 24px 26px;box-shadow:0 20px 50px rgba(0,0,0,.2);}
+.modal h2{margin:0 0 4px;font-size:18px;font-weight:800;}
+.modal .sub{color:var(--muted);font-size:13px;margin:0 0 18px;}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:13px;font-weight:700;margin-bottom:6px;color:var(--ink);}
+.field input, .field textarea, .field select{
+  width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;
+  font-family:inherit;font-size:14px;background:#fff;color:var(--ink);
+}
+.field input:focus, .field textarea:focus, .field select:focus{outline:2px solid var(--primary);outline-offset:1px;border-color:var(--primary);}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.modal-actions{display:flex;gap:10px;margin-top:18px;justify-content:flex-end;}
+.photo-pick{display:flex;align-items:center;gap:12px;position:relative;}
+.photo-preview{width:64px;height:64px;border-radius:10px;background:var(--primary-tint) center/cover no-repeat;flex:0 0 64px;display:flex;align-items:center;justify-content:center;color:var(--primary-dark);font-size:22px;}
+
+/* ===== Profile / detail ===== */
+.detail-head{display:flex;gap:16px;align-items:center;margin-bottom:20px;flex-wrap:wrap;}
+.detail-photo{width:84px;height:84px;border-radius:16px;background:var(--primary-tint) center/cover no-repeat;flex:0 0 84px;display:flex;align-items:center;justify-content:center;color:var(--primary-dark);font-size:30px;}
+.timeline{display:flex;flex-direction:column;gap:10px;}
+.tl-row{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
+.tl-row .k{font-weight:700;font-size:13.5px;color:var(--muted);}
+.tl-row .v{font-weight:800;font-size:14.5px;}
+.tl-row .v.empty-val{color:var(--muted);font-weight:600;font-size:13px;}
+
+table{width:100%;border-collapse:collapse;background:var(--surface);border-radius:12px;overflow:hidden;border:1px solid var(--line);}
+th,td{padding:10px 12px;text-align:right;font-size:13.5px;border-bottom:1px solid var(--line);}
+th{background:var(--primary-tint);color:var(--primary-dark);font-weight:800;}
+tr:last-child td{border-bottom:none;}
+.table-wrap{overflow-x:auto;border-radius:12px;}
+
+.toast-wrap{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:100;display:flex;flex-direction:column;gap:8px;align-items:center;}
+.toast{background:var(--ink);color:#fff;padding:10px 18px;border-radius:30px;font-size:13.5px;font-weight:700;box-shadow:0 8px 20px rgba(0,0,0,.2);}
+
+.menu-btn{display:none;}
+.backdrop-mobile{display:none;}
+
+/* ===== Bottom tab bar (mobile) ===== */
+.bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:45;
+  background:var(--surface);border-top:1px solid var(--line);
+  padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px));
+  box-shadow:0 -6px 18px rgba(0,0,0,.06);}
+.bottom-nav-inner{display:flex;overflow-x:auto;gap:2px;}
+.bn-item{flex:1 0 auto;min-width:62px;display:flex;flex-direction:column;align-items:center;gap:2px;
+  padding:7px 4px;border-radius:12px;background:transparent;border:none;font-family:inherit;
+  color:var(--muted);font-size:10.5px;font-weight:700;cursor:pointer;}
+.bn-item .ico{font-size:19px;line-height:1;}
+.bn-item.active{color:var(--primary-dark);background:var(--primary-tint);}
+
+@media (max-width:760px){
+  .sidebar{display:none;}
+  .bottom-nav{display:block;}
+  main{padding:16px 14px calc(96px + env(safe-area-inset-bottom,0px));}
+  .field-row{grid-template-columns:1fr;}
+  .topbar{position:sticky;top:0;background:var(--bg);padding-top:4px;z-index:10;}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="backdrop-mobile" id="backdrop" onclick="closeSidebar()"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-mark">🐇</div>
+      <div>
+        <div class="brand-text">مزرعتي</div>
+        <div class="brand-sub">إدارة الأرانب</div>
+      </div>
+    </div>
+    <nav id="navList"></nav>
+  </aside>
+
+  <main>
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button class="menu-btn" onclick="openSidebar()">☰</button>
+        <div>
+          <h1 id="pageTitle">الرئيسية</h1>
+          <p id="pageSub">نظرة عامة على المزرعة</p>
+        </div>
+      </div>
+      <div id="topbarActions"></div>
+    </div>
+    <div id="content"></div>
+  </main>
+</div>
+
+<nav class="bottom-nav" id="bottomNav">
+  <div class="bottom-nav-inner" id="bottomNavInner"></div>
+</nav>
+
+<div class="overlay" id="overlay">
+  <div class="modal" id="modalBody"></div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+/* ======================= DATA LAYER ======================= */
+const DB_KEY = 'rabbitFarmDB_v1';
+function loadDB(){
+  try{
+    const raw = localStorage.getItem(DB_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return { mothers:[], males:[], matings:[], fattening:[], vaccinations:[], finance:[] };
+}
+function saveDB(){
+  try{ localStorage.setItem(DB_KEY, JSON.stringify(DB)); }catch(e){ toast('تعذر الحفظ محليًا'); }
+}
+let DB = loadDB();
+const WHATSAPP_NUMBER = '201095222441'; // 01095222441 بصيغة دولية
+
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+function addDays(dateStr, days){
+  const d = new Date(dateStr); d.setDate(d.getDate()+days);
+  return d.toISOString().slice(0,10);
+}
+function daysUntil(dateStr){
+  if(!dateStr) return null;
+  const today = new Date(todayISO());
+  const target = new Date(dateStr);
+  return Math.round((target-today)/86400000);
+}
+function fmtDate(d){
+  if(!d) return '—';
+  const dt = new Date(d);
+  return dt.toLocaleDateString('ar-EG',{day:'numeric',month:'short',year:'numeric'});
+}
+function motherStatus(motherId){
+  const hasLitter = DB.matings.some(mt=>mt.motherId===motherId && !mt.converted && mt.actualBirthDate);
+  const hasPending = DB.matings.some(mt=>mt.motherId===motherId && !mt.converted && mt.matingDate && !mt.actualBirthDate);
+  if(hasLitter && hasPending) return {label:'معاها فطام ومتلقحة', cls:'alert'};
+  if(hasPending) return {label:'ملقحة', cls:'alert'};
+  if(hasLitter) return {label:'معاها فطام', cls:'alert'};
+  return {label:'فاضية', cls:'ok'};
+}
+function ageString(birthDateStr){
+  if(!birthDateStr) return null;
+  const start = new Date(birthDateStr);
+  const now = new Date(todayISO());
+  if(start > now) return null;
+  let months = (now.getFullYear()-start.getFullYear())*12 + (now.getMonth()-start.getMonth());
+  let days = now.getDate() - start.getDate();
+  if(days < 0){
+    months--;
+    const prevMonthLastDay = new Date(now.getFullYear(), now.getMonth(), 0).getDate();
+    days += prevMonthLastDay;
+  }
+  if(months < 0) return null;
+  if(months === 0) return `العمر: ${days} يوم`;
+  if(days === 0) return `العمر: ${months} شهر`;
+  return `العمر: ${months} شهر و${days} يوم`;
+}
+function toast(msg){
+  const el = document.createElement('div');
+  el.className='toast'; el.textContent=msg;
+  document.getElementById('toastWrap').appendChild(el);
+  setTimeout(()=>el.remove(),2600);
+}
+function exportBackup(){
+  try{
+    const dataStr = JSON.stringify(DB, null, 2);
+    const blob = new Blob([dataStr], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'نسخة-احتياطية-'+todayISO()+'.json';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast('اتنزلت النسخة الاحتياطية ✅');
+  }catch(e){ toast('تعذر التصدير'); }
+}
+function importBackup(input){
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e=>{
+    try{
+      const data = JSON.parse(e.target.result);
+      if(!data || typeof data !== 'object') throw new Error('bad');
+      DB = Object.assign({mothers:[],males:[],matings:[],fattening:[],vaccinations:[],finance:[]}, data);
+      saveDB();
+      toast('تم استرجاع البيانات ✅');
+      render();
+    }catch(err){ toast('الملف مش نسخة احتياطية صالحة'); }
+  };
+  reader.readAsText(file);
+}
+
+/* Gestation default for rabbits ~31 days */
+const GESTATION_DAYS = 31;
+const BREEDS = ['غير محدد','بلدي','خليط','نيوزلندي','ركس','جبلي','بلجيكي','فلاندر','مشتهر','بوسكات','بفرين','هولندي','دوتش','فيلاين','اسكندرية','شنشلا','بابيون','كاليفورنيا','هايبلس','أسد','هارلي'];
+
+/* ======================= NAV ======================= */
+const PAGES = [
+  {id:'dashboard', label:'الرئيسية', ico:'🏠'},
+  {id:'mothers', label:'الأمهات', ico:'🐰'},
+  {id:'matings', label:'التلقيح', ico:'❤️'},
+  {id:'males', label:'الذكور', ico:'♂️'},
+  {id:'fattening', label:'التسمين', ico:'📈'},
+  {id:'vaccinations', label:'التطعيمات', ico:'💉'},
+  {id:'finance', label:'الحسابات والأسعار', ico:'💰'},
+];
+let currentPage = 'dashboard';
+
+function renderNav(){
+  const nav = document.getElementById('navList');
+  nav.innerHTML = '';
+  PAGES.forEach(p=>{
+    const btn = document.createElement('button');
+    btn.className = 'nav-item' + (p.id===currentPage?' active':'');
+    const badge = p.id==='mothers' ? getUpcomingAlerts().length : (p.id==='dashboard' ? getUpcomingAlerts().length : 0);
+    btn.innerHTML = `<span class="ico">${p.ico}</span><span>${p.label}</span>` + (badge>0 && (p.id==='dashboard') ? `<span class="nav-badge">${badge}</span>` : '');
+    btn.onclick = ()=>{ currentPage = p.id; closeSidebar(); render(); };
+    nav.appendChild(btn);
+  });
+}
+function openSidebar(){}
+function closeSidebar(){}
+
+function renderBottomNav(){
+  const wrap = document.getElementById('bottomNavInner');
+  wrap.innerHTML = '';
+  PAGES.forEach(p=>{
+    const btn = document.createElement('button');
+    btn.className = 'bn-item' + (p.id===currentPage?' active':'');
+    const badge = (p.id==='dashboard') ? getUpcomingAlerts().length : 0;
+    btn.innerHTML = `<span class="ico">${p.ico}</span><span>${p.label}</span>` + (badge>0?`<span class="nav-badge" style="margin-right:0;">${badge}</span>`:'');
+    btn.onclick = ()=>{ currentPage = p.id; render(); window.scrollTo(0,0); };
+    wrap.appendChild(btn);
+  });
+}
+
+/* ======================= ALERTS ENGINE ======================= */
+// يبني قائمة تنبيهات من كل أم بناءً على مواعيدها القادمة (خلال 3 أيام قادمة أو متأخرة)
+function getUpcomingAlerts(){
+  const alerts = [];
+  DB.mothers.forEach(m=>{
+    const checks = [
+      {key:'gisDate', label:'ميعاد الجس', ico:'🩺'},
+      {key:'expectedBirth', label:'الميعاد المتوقع للولادة', ico:'🍼'},
+      {key:'weanDate', label:'ميعاد الفطام', ico:'🌾'},
+      {key:'nextMatingDate', label:'ميعاد التلقيح القادم', ico:'❤️'},
+      {key:'nextTreatmentDate', label:'ميعاد العلاج القادم', ico:'💊'},
+    ];
+    checks.forEach(c=>{
+      const val = m[c.key];
+      if(!val) return;
+      const dd = daysUntil(val);
+      if(dd!==null && dd<=3){ // متأخر أو خلال 3 أيام
+        const label = (c.key==='nextTreatmentDate' && m.nextTreatmentName) ? `${c.label}: ${m.nextTreatmentName}` : c.label;
+        alerts.push({motherId:m.id, motherName:m.name, label, ico:c.ico, date:val, days:dd});
+      }
+    });
+    if(m.expectedBirth){
+      const prepDate = addDays(m.expectedBirth, -5);
+      const dd = daysUntil(prepDate);
+      if(dd!==null && dd<=3){
+        alerts.push({motherId:m.id, motherName:m.name, label:'جهّز بيت الولادة', ico:'🏠', date:prepDate, days:dd});
+      }
+    }
+  });
+  DB.males.forEach(mm=>{
+    if(mm.nextTreatmentDate){
+      const dd = daysUntil(mm.nextTreatmentDate);
+      if(dd!==null && dd<=3){
+        const label = mm.nextTreatmentName ? `ميعاد العلاج القادم: ${mm.nextTreatmentName}` : 'ميعاد العلاج القادم';
+        alerts.push({motherId:mm.id, motherName:mm.name+' (ذكر)', label, ico:'💊', date:mm.nextTreatmentDate, days:dd, isMale:true});
+      }
+    }
+  });
+  DB.matings.forEach(mt=>{
+    if(mt.converted) return;
+    const mom = DB.mothers.find(x=>x.id===mt.motherId);
+    const momName = mom ? mom.name : 'أم';
+    if(!mt.actualBirthDate){
+      const checks = [
+        {key:'gisDate', label:'ميعاد الجس', ico:'🩺'},
+        {key:'expectedBirth', label:'الميعاد المتوقع للولادة', ico:'🍼'},
+      ];
+      checks.forEach(c=>{
+        const val = mt[c.key];
+        if(!val) return;
+        const dd = daysUntil(val);
+        if(dd!==null && dd<=3){
+          alerts.push({motherId:mt.id, motherName:momName, label:c.label, ico:c.ico, date:val, days:dd, isMating:true});
+        }
+      });
+      if(mt.expectedBirth){
+        const prepDate = addDays(mt.expectedBirth,-5);
+        const dd = daysUntil(prepDate);
+        if(dd!==null && dd<=3){
+          alerts.push({motherId:mt.id, motherName:momName, label:'جهّز بيت الولادة', ico:'🏠', date:prepDate, days:dd, isMating:true});
+        }
+      }
+    } else {
+      const weanDate = addDays(mt.actualBirthDate,35);
+      const dd = daysUntil(weanDate);
+      if(dd!==null && dd<=3){
+        alerts.push({motherId:mt.id, motherName:momName, label:'ميعاد الفطام', ico:'🌾', date:weanDate, days:dd, isMating:true});
+      }
+    }
+  });
+  DB.fattening.forEach(f=>{
+    if(!f.saleAlertDate || f.sold) return;
+    const dd = daysUntil(f.saleAlertDate);
+    if(dd!==null && dd<=3){
+      const mom = DB.mothers.find(x=>x.id===f.motherId);
+      alerts.push({motherId:f.id, motherName:(mom?mom.name:'دفعة')+' - وقت البيع', label:'الدفعة وصلت لعمر البيع (٦٠ يوم)', ico:'💰', date:f.saleAlertDate, days:dd, isFattening:true});
+    }
+  });
+  alerts.sort((a,b)=> a.days-b.days);
+  return alerts;
+}
+
+function waLink(text){
+  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`;
+}
+
+/* ======================= MODAL HELPERS ======================= */
+function openModal(html){
+  document.getElementById('modalBody').innerHTML = html;
+  document.getElementById('overlay').classList.add('open');
+  try{ history.pushState({modalOpen:true}, ''); }catch(e){}
+}
+function hideModalOnly(){
+  document.getElementById('overlay').classList.remove('open');
+}
+function closeModal(){
+  if(window.history.state && window.history.state.modalOpen){
+    history.back();
+  } else {
+    hideModalOnly();
+  }
+}
+window.addEventListener('popstate', function(){
+  hideModalOnly();
+});
+document.getElementById('overlay').addEventListener('click', e=>{
+  if(e.target.id==='overlay') closeModal();
+});
+
+/* ======================= RENDER ROOT ======================= */
+function render(){
+  renderNav();
+  renderBottomNav();
+  const meta = PAGES.find(p=>p.id===currentPage);
+  document.getElementById('pageTitle').textContent = meta.label;
+  const subs = {
+    dashboard:'نظرة عامة على المزرعة والتنبيهات',
+    mothers:'المعلومات الأساسية لكل أم وحالتها الحالية',
+    matings:'سجل ومتابعة كل عملية تلقيح: تلقيح، جس، ولادة، فطام',
+    males:'المعلومات الأساسية والإحصائيات لكل ذكر',
+    fattening:'دفعات التسمين بعد الفطام ومواعيد البيع',
+    vaccinations:'سجل التطعيمات لكل الأرانب',
+    finance:'أسعار العلف واللحم والحسابات',
+  };
+  document.getElementById('pageSub').textContent = subs[currentPage];
+
+  const actions = document.getElementById('topbarActions');
+  actions.innerHTML = '';
+  if(currentPage==='mothers'){
+    actions.innerHTML = `<button class="btn" onclick="openMotherForm()">+ إضافة أم جديدة</button>`;
+  } else if(currentPage==='matings'){
+    actions.innerHTML = `<button class="btn" onclick="openMatingForm()">+ تسجيل تلقيح جديد</button>`;
+  } else if(currentPage==='males'){
+    actions.innerHTML = `<button class="btn" onclick="openMaleForm()">+ إضافة ذكر</button>`;
+  } else if(currentPage==='fattening'){
+    actions.innerHTML = `<button class="btn" onclick="openFatteningForm()">+ دفعة تسمين</button>`;
+  } else if(currentPage==='vaccinations'){
+    actions.innerHTML = `<button class="btn" onclick="openVaccineForm()">+ تطعيم جديد</button>`;
+  } else if(currentPage==='finance'){
+    actions.innerHTML = `<button class="btn" onclick="openFinanceForm()">+ قيد جديد</button>`;
+  }
+
+  const c = document.getElementById('content');
+  if(currentPage==='dashboard') c.innerHTML = renderDashboard();
+  else if(currentPage==='mothers') c.innerHTML = renderMothersList();
+  else if(currentPage==='matings') c.innerHTML = renderMatingsList();
+  else if(currentPage==='males') c.innerHTML = renderMales();
+  else if(currentPage==='fattening') c.innerHTML = renderFattening();
+  else if(currentPage==='vaccinations') c.innerHTML = renderVaccinations();
+  else if(currentPage==='finance') c.innerHTML = renderFinance();
+}
+
+/* ======================= DASHBOARD ======================= */
+function renderDashboard(){
+  const alerts = getUpcomingAlerts();
+  const backupBar = `
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;">
+      <button class="btn secondary small" onclick="exportBackup()">📤 تصدير نسخة احتياطية</button>
+      <label class="btn secondary small" style="cursor:pointer;">📥 استيراد نسخة احتياطية
+        <input type="file" accept="application/json" style="display:none;" onchange="importBackup(this)">
+      </label>
+    </div>`;
+  const stats = `
+    <div class="grid">
+      <div class="stat-card"><div class="num">${DB.mothers.length}</div><div class="lbl">إجمالي الأمهات</div></div>
+      <div class="stat-card"><div class="num">${DB.males.length}</div><div class="lbl">إجمالي الذكور</div></div>
+      <div class="stat-card"><div class="num">${DB.mothers.filter(m=>m.expectedBirth && daysUntil(m.expectedBirth)>=0).length}</div><div class="lbl">حوامل حاليًا</div></div>
+      <div class="stat-card"><div class="num">${alerts.length}</div><div class="lbl">تنبيهات قريبة</div></div>
+    </div>`;
+
+  let alertsHtml = '';
+  if(alerts.length===0){
+    alertsHtml = `<div class="empty">مفيش تنبيهات قريبة دلوقتي 🌿</div>`;
+  } else {
+    alertsHtml = alerts.map(a=>{
+      const statusTxt = a.days<0 ? `متأخر ${Math.abs(a.days)} يوم` : a.days===0 ? 'النهاردة' : `بعد ${a.days} يوم`;
+      const waText = `تنبيه مزرعة: ${a.label} للأم "${a.motherName}" — بتاريخ ${fmtDate(a.date)} (${statusTxt})`;
+      return `
+      <div class="alert-item">
+        <div class="ico">${a.ico}</div>
+        <div class="txt">
+          <div><b>${a.motherName}</b> — ${a.label}</div>
+          <div class="date">${fmtDate(a.date)} · ${statusTxt}</div>
+          <div class="alert-actions">
+          <button class="btn small secondary" onclick="${a.isMale ? `openMaleDetail('${a.motherId}')` : a.isMating ? `openMatingDetail('${a.motherId}')` : a.isFattening ? `currentPage='fattening';render()` : `openMotherDetail('${a.motherId}')`}">فتح السجل</button>
+            <a class="btn small" style="background:#25D366" href="${waLink(waText)}" target="_blank" rel="noopener">إرسال واتساب</a>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  return `
+    ${backupBar}
+    ${stats}
+    <div class="section">
+      <div class="section-title">🔔 التنبيهات القادمة (خلال ٣ أيام أو متأخرة)</div>
+      ${alertsHtml}
+    </div>
+  `;
+}
+
+/* ======================= MOTHERS ======================= */
+function renderMothersList(){
+  if(DB.mothers.length===0){
+    return `<div class="empty">لسه مفيش أمهات مسجلة. دوس "إضافة أم جديدة" عشان تبدأ.</div>`;
+  }
+  const rows = DB.mothers.map(m=>{
+    const photo = m.photo ? `style="background-image:url('${m.photo}')"` : '';
+    const breedTxt = (m.breed && m.breed!=='غير محدد') ? m.breed : '';
+    const st = motherStatus(m.id);
+    return `
+    <div class="mother-row" onclick="openMotherDetail('${m.id}')">
+      <div class="mother-row-photo" ${photo}>${m.photo?'':'🐇'}</div>
+      <div class="mother-row-info">
+        <div class="mother-row-name">${m.name}${breedTxt?` <span style="font-weight:600;font-size:14px;color:var(--muted);">· ${breedTxt}</span>`:''}</div>
+        <div class="mother-row-meta"><span class="status-chip ${st.cls}">${st.label}</span></div>
+      </div>
+    </div>`;
+  }).join('');
+  return `<div>${rows}</div>`;
+}
+
+function openMotherForm(existing){
+  const m = existing || {};
+  openModal(`
+    <h2>${existing?'تعديل بيانات الأم':'إضافة أم جديدة'}</h2>
+    <p class="sub">البيانات الأساسية للأم — تقدر تضيف مواعيد دورة التربية بعدين من صفحتها</p>
+    <div class="field">
+      <label>اسم / رقم الأم</label>
+      <input id="f_name" value="${m.name||''}" placeholder="مثال: ١٢" inputmode="numeric" pattern="[0-9]*">
+    </div>
+    <div class="field">
+      <label>نوع الأم (السلالة)</label>
+      <select id="f_breed">
+        ${BREEDS.map(b=>`<option value="${b}" ${m.breed===b?'selected':''}>${b}</option>`).join('')}
+      </select>
+    </div>
+    <div class="field">
+      <label>تاريخ الميلاد</label>
+      <input id="f_birth" type="date" value="${m.birthDate||''}">
+    </div>
+    <div class="field">
+      <label>صورة الأم (اختياري)</label>
+      <label class="photo-pick" style="cursor:pointer;">
+        <div class="photo-preview" id="photoPreview" style="${m.photo?`background-image:url('${m.photo}')`:''}">${m.photo?'':'🐇'}</div>
+        <span class="btn secondary small" style="pointer-events:none;">اختيار / تصوير</span>
+        <input id="f_photo" type="file" accept="image/*" onchange="previewPhoto(this)" style="position:absolute;opacity:0;width:1px;height:1px;">
+      </label>
+    </div>
+    <div class="field">
+      <label>ملاحظات عن الأم (اختياري)</label>
+      <textarea id="f_notes" rows="3" placeholder="أي ملاحظات تحب تسجلها عن الأم...">${m.notes||''}</textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeModal()">إلغاء</button>
+      <button class="btn" onclick="saveMother('${existing?existing.id:''}')">${existing?'حفظ التعديلات':'إضافة'}</button>
+    </div>
+  `);
+  window._photoData = m.photo || null;
+}
+function previewPhoto(input){
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e=>{
+    window._photoData = e.target.result;
+    const p = document.getElementById('photoPreview');
+    p.style.backgroundImage = `url('${e.target.result}')`;
+    p.textContent='';
+  };
+  reader.readAsDataURL(file);
+}
+function saveMother(id){
+  const name = document.getElementById('f_name').value.trim();
+  const birth = document.getElementById('f_birth').value;
+  const breed = document.getElementById('f_breed').value;
+  const notes = document.getElementById('f_notes').value.trim();
+  if(!name){ toast('اكتب اسم الأم'); return; }
+  if(id){
+    const m = DB.mothers.find(x=>x.id===id);
+    m.name=name; m.birthDate=birth; m.breed=breed; m.notes=notes; m.photo = window._photoData || m.photo || null;
+  } else {
+    DB.mothers.push({
+      id: uid(), name, birthDate: birth, breed, notes, photo: window._photoData || null,
+      meds:[], nextTreatmentDate:null, nextTreatmentName:null
+    });
+  }
+  saveDB(); closeModal(); render();
+  toast('تم الحفظ ✅');
+}
+function deleteMother(id){
+  if(!confirm('متأكد إنك عايز تمسح الأم دي؟')) return;
+  DB.mothers = DB.mothers.filter(m=>m.id!==id);
+  saveDB(); currentPage='mothers'; render();
+}
+
+function openMotherDetail(id){
+  const m = DB.mothers.find(x=>x.id===id);
+  if(!m) return;
+  currentPage = 'mothers';
+  document.getElementById('content').innerHTML = renderMotherDetail(m);
+  document.getElementById('pageTitle').textContent = m.name;
+  document.getElementById('pageSub').textContent = 'المعلومات الأساسية وسجل التلقيح';
+  document.getElementById('topbarActions').innerHTML = `
+    <button class="btn secondary" onclick="render()">⟵ رجوع للقائمة</button>
+    <button class="btn secondary" onclick='openMotherForm(${JSON.stringify(m)})'>تعديل البيانات</button>
+    <button class="btn danger-outline" onclick="deleteMother('${m.id}')">حذف</button>
+  `;
+  renderNav();
+}
+
+function renderMotherDetail(m){
+  const photo = m.photo ? `style="background-image:url('${m.photo}')"` : '';
+  const st = motherStatus(m.id);
+
+  const myMatings = DB.matings.filter(mt=>mt.motherId===m.id).sort((a,b)=> (b.matingDate||'').localeCompare(a.matingDate||''));
+  const matingsHtml = myMatings.length===0
+    ? `<div class="empty" style="padding:20px;">لسه مفيش تلقيح مسجل لهذه الأم.</div>`
+    : myMatings.map(mt=>{
+        const male = DB.males.find(x=>x.id===mt.maleId);
+        const stageLabel = mt.converted ? 'اتفطمت وتحولت للتسمين ✅' : (mt.actualBirthDate ? 'معاها فطام - متابعة' : (mt.matingDate ? 'حامل - تحت المتابعة' : ''));
+        const avatar = male && male.photo ? `style="background-image:url('${male.photo}')"` : '';
+        return `
+        <div class="mini-link-row" onclick="openMatingDetail('${mt.id}')">
+          <div class="avatar" ${avatar}>${male && male.photo ? '' : '♂️'}</div>
+          <div style="flex:1;">
+            <div style="font-weight:800;font-size:14.5px;">${male ? male.name : 'ذكر محذوف'}</div>
+            <div style="font-size:12.5px;color:var(--muted);">${fmtDate(mt.matingDate)} · ${stageLabel}</div>
+          </div>
+        </div>`;
+      }).join('');
+
+  const healthRows = [
+    {key:'nextTreatmentDate', label:'ميعاد العلاج القادم', type:'date'},
+  ];
+  const healthHtml = healthRows.map(r=>{
+    const val = m[r.key];
+    const display = fmtDate(val);
+    const alertNear = val && daysUntil(val)<=3;
+    const nameSuffix = m.nextTreatmentName ? ` — ${m.nextTreatmentName}` : '';
+    return `
+    <div class="tl-row">
+      <div class="k">${r.label}</div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="v ${!val?'empty-val':''}">${display}${nameSuffix}${alertNear?' 🔔':''}</div>
+        <button class="btn small secondary" onclick="editMotherField('${m.id}','${r.key}','${r.type}')">تعديل</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  const medsRows = (m.meds||[]).map((med,i)=>`
+    <tr>
+      <td>${med.name}</td>
+      <td>${fmtDate(med.date)}</td>
+      <td><button class="btn small danger-outline" onclick="removeMed('${m.id}',${i})">حذف</button></td>
+    </tr>`).join('');
+
+  return `
+    <div class="detail-head">
+      <div class="detail-photo" ${photo}>${m.photo?'':'🐇'}</div>
+      <div>
+        <div style="font-weight:800;font-size:18px;">${m.name}</div>
+        <div style="color:var(--muted);font-size:13.5px;">${m.breed && m.breed!=='غير محدد' ? m.breed+' · ' : ''}تاريخ الميلاد: ${fmtDate(m.birthDate)}</div>
+        ${ageString(m.birthDate) ? `<div style="color:var(--primary-dark);font-size:12.5px;font-weight:700;margin-top:2px;">${ageString(m.birthDate)}</div>` : ''}
+        <div style="margin-top:6px;"><span class="status-chip ${st.cls}">${st.label}</span></div>
+      </div>
+    </div>
+
+    <div class="section" style="margin-top:0;">
+      <div class="section-title">❤️ سجل التلقيح</div>
+      ${matingsHtml}
+      <button class="btn secondary small" style="margin-top:4px;" onclick="openMatingForm('${m.id}')">+ تسجيل تلقيح جديد لهذه الأم</button>
+    </div>
+
+    ${m.notes ? `
+    <div class="section">
+      <div class="section-title">📝 ملاحظات</div>
+      <div class="tl-row" style="display:block;"><div style="font-size:14px;line-height:1.6;">${m.notes}</div></div>
+    </div>` : ''}
+
+    <div class="section">
+      <div class="section-title">🏥 الرعاية الصحية</div>
+      <div class="timeline">${healthHtml}</div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">💊 سجل الأدوية والعلاجات</div>
+      <div class="field-row" style="margin-bottom:12px;">
+        <input id="medName" placeholder="اسم الدواء">
+        <input id="medDate" type="date" value="${todayISO()}">
+      </div>
+      <button class="btn small secondary" style="margin-bottom:14px;" onclick="addMed('${m.id}')">+ إضافة دواء</button>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>الدواء</th><th>التاريخ</th><th></th></tr></thead>
+          <tbody>${medsRows || '<tr><td colspan="3" style="color:var(--muted);">لسه مفيش أدوية مسجلة</td></tr>'}</tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function editMotherField(id, key, type){
+  const m = DB.mothers.find(x=>x.id===id);
+  const current = m[key] || '';
+  const label = {matingDate:'تاريخ التلقيح',gisDate:'تاريخ الجس',expectedBirth:'الميعاد المتوقع للولادة',actualBirthDate:'تاريخ الولادة الفعلي',birthCount:'عدد الأولاد المولودين',weanDate:'تاريخ الفطام',nextMatingDate:'تاريخ التلقيح القادم',nextTreatmentDate:'ميعاد العلاج القادم'}[key];
+
+  if(key==='matedWithMaleId'){
+    if(DB.males.length===0){
+      openModal(`
+        <h2>تعديل: اتلقحت من الذكر</h2>
+        <p class="sub">لسه مفيش ذكور مسجلة. سجّل ذكر الأول من صفحة "الذكور".</p>
+        <div class="modal-actions"><button class="btn secondary" onclick="closeModal()">تمام</button></div>
+      `);
+      return;
+    }
+    openModal(`
+      <h2>تعديل: اتلقحت من الذكر</h2>
+      <div class="field">
+        <label>اختار الذكر</label>
+        <select id="fieldValSelect">
+          <option value="">بدون تحديد</option>
+          ${DB.males.map(mm=>`<option value="${mm.id}" ${current===mm.id?'selected':''}>${mm.name}${mm.breed && mm.breed!=='غير محدد' ? ' · '+mm.breed : ''}</option>`).join('')}
+        </select>
+      </div>
+      <div class="modal-actions">
+        <button class="btn secondary" onclick="closeModal()">إلغاء</button>
+        <button class="btn" onclick="saveMotherMaleLink('${id}')">حفظ</button>
+      </div>
+    `);
+    return;
+  }
+
+  if(key==='nextTreatmentDate'){
+    openModal(`
+      <h2>تعديل: ميعاد العلاج القادم</h2>
+      <div class="field">
+        <label>اسم العلاج/الدواء</label>
+        <input id="fieldValName" value="${m.nextTreatmentName||''}" placeholder="مثال: إيفوماك">
+      </div>
+      <div class="field">
+        <label>ميعاد العلاج القادم</label>
+        <input id="fieldVal" type="date" value="${current}">
+      </div>
+      <div class="modal-actions">
+        <button class="btn secondary" onclick="closeModal()">إلغاء</button>
+        <button class="btn" onclick="saveTreatment('${id}')">حفظ</button>
+      </div>
+    `);
+    return;
+  }
+
+  if(key==='nextMatingDate'){
+    if(!m.actualBirthDate){
+      openModal(`
+        <h2>تعديل: ${label}</h2>
+        <p class="sub">لازم تسجل "تاريخ الولادة الفعلي" الأول، عشان المواعيد دي بتتحسب منه.</p>
+        <div class="modal-actions"><button class="btn secondary" onclick="closeModal()">تمام</button></div>
+      `);
+      return;
+    }
+    const options = [
+      {label:'بعد يوم', days:1},
+      {label:'بعد ٥ أيام', days:5},
+      {label:'بعد ١٠ أيام', days:10},
+      {label:'بعد ١٥ يوم', days:15},
+      {label:'بعد شهر', days:30},
+    ];
+    openModal(`
+      <h2>تعديل: ${label}</h2>
+      <p class="sub">المواعيد دي بتتحسب من تاريخ الولادة الفعلي (${fmtDate(m.actualBirthDate)})</p>
+      <div class="field">
+        <label>${label}</label>
+        <select id="fieldValSelect">
+          <option value="">اختار...</option>
+          ${options.map(o=>`<option value="${addDays(m.actualBirthDate,o.days)}" ${current===addDays(m.actualBirthDate,o.days)?'selected':''}>${o.label} (${fmtDate(addDays(m.actualBirthDate,o.days))})</option>`).join('')}
+        </select>
+      </div>
+      <div class="modal-actions">
+        <button class="btn secondary" onclick="closeModal()">إلغاء</button>
+        <button class="btn" onclick="saveMotherField('${id}','${key}')">حفظ</button>
+      </div>
+    `);
+    return;
+  }
+
+  openModal(`
+    <h2>تعديل: ${label}</h2>
+    <div class="field">
+      <label>${label}</label>
+      <input id="fieldVal" type="${type}" value="${current}">
+    </div>
+    ${key==='matingDate' ? '<p class="sub">ملحوظة: هيتحدد ميعاد الجس تلقائيًا بعد ١٤ يوم، وميعاد الولادة المتوقع بعد ٣٠ يوم من تاريخ التلقيح.</p>' : ''}
+    ${key==='actualBirthDate' ? '<p class="sub">ملحوظة: هيتحدد ميعاد الفطام تلقائيًا بعد ٣٥ يوم من تاريخ الولادة الفعلي.</p>' : ''}
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeModal()">إلغاء</button>
+      <button class="btn" onclick="saveMotherField('${id}','${key}')">حفظ</button>
+    </div>
+  `);
+}
+function saveMotherMaleLink(id){
+  const m = DB.mothers.find(x=>x.id===id);
+  m.matedWithMaleId = document.getElementById('fieldValSelect').value || null;
+  saveDB(); closeModal(); openMotherDetail(id);
+  toast('اتحفظ ✅');
+}
+function saveTreatment(id){
+  const m = DB.mothers.find(x=>x.id===id);
+  const name = document.getElementById('fieldValName').value.trim();
+  const date = document.getElementById('fieldVal').value;
+  m.nextTreatmentName = name;
+  m.nextTreatmentDate = date;
+  saveDB(); closeModal(); openMotherDetail(id);
+  toast('اتحفظ ✅');
+}
+function saveMotherField(id, key){
+  const m = DB.mothers.find(x=>x.id===id);
+  const val = document.getElementById('fieldVal') ? document.getElementById('fieldVal').value : document.getElementById('fieldValSelect').value;
+  if(!val){ toast('اختار ميعاد الأول'); return; }
+  m[key] = val;
+  if(key==='matingDate' && val){
+    m.gisDate = addDays(val, 14);
+    m.expectedBirth = addDays(val, 30);
+  }
+  if(key==='actualBirthDate' && val){
+    m.weanDate = addDays(val, 35);
+  }
+  saveDB(); closeModal(); openMotherDetail(id);
+  toast('اتحفظ ✅');
+}
+function addMed(id){
+  const name = document.getElementById('medName').value.trim();
+  const date = document.getElementById('medDate').value;
+  if(!name){ toast('اكتب اسم الدواء'); return; }
+  const m = DB.mothers.find(x=>x.id===id);
+  m.meds = m.meds || [];
+  m.meds.push({name, date});
+  saveDB(); openMotherDetail(id);
+  toast('اتضاف الدواء ✅');
+}
+function removeMed(id, idx){
+  const m = DB.mothers.find(x=>x.id===id);
+  m.meds.splice(idx,1);
+  saveDB(); openMotherDetail(id);
+}
+
+/* ======================= MATINGS (التلقيح) ======================= */
+function matingStageLabel(mt){
+  if(mt.converted) return {label:'اتفطمت وتحولت للتسمين', cls:'ok'};
+  if(mt.actualBirthDate) return {label:'معاها فطام - تحت المتابعة', cls:'alert'};
+  if(mt.matingDate) return {label:'حامل - تحت المتابعة', cls:'alert'};
+  return {label:'جديد', cls:'ok'};
+}
+
+function renderMatingsList(){
+  if(DB.matings.length===0){
+    return `<div class="empty">لسه مفيش عمليات تلقيح مسجلة. دوس "تسجيل تلقيح جديد" عشان تبدأ.</div>`;
+  }
+  const sorted = [...DB.matings].sort((a,b)=> (b.matingDate||'').localeCompare(a.matingDate||''));
+  const rows = sorted.map(mt=>{
+    const mom = DB.mothers.find(x=>x.id===mt.motherId);
+    const male = DB.males.find(x=>x.id===mt.maleId);
+    const stage = matingStageLabel(mt);
+    const photo = mom && mom.photo ? `style="background-image:url('${mom.photo}')"` : '';
+    return `
+    <div class="mother-row" onclick="openMatingDetail('${mt.id}')">
+      <div class="mother-row-photo" ${photo}>${mom && mom.photo ? '' : '🐇'}</div>
+      <div class="mother-row-info">
+        <div class="mother-row-name">${mom ? mom.name : 'أم محذوفة'} <span style="font-weight:600;font-size:14px;color:var(--muted);">× ${male ? male.name : 'ذكر محذوف'}</span></div>
+        <div class="mother-row-meta">${fmtDate(mt.matingDate)} · <span class="status-chip ${stage.cls}">${stage.label}</span></div>
+      </div>
+    </div>`;
+  }).join('');
+  return `<div>${rows}</div>`;
+}
+
+function openMatingForm(prefillMotherId){
+  if(DB.mothers.length===0 || DB.males.length===0){
+    openModal(`
+      <h2>تسجيل تلقيح جديد</h2>
+      <p class="sub">لازم يكون عندك أم واحدة وذكر واحد على الأقل مسجلين قبل ما تسجل تلقيح.</p>
+      <div class="modal-actions"><button class="btn secondary" onclick="closeModal()">تمام</button></div>
+    `);
+    return;
+  }
+  openModal(`
+    <h2>تسجيل تلقيح جديد</h2>
+    <div class="field">
+      <label>الأم</label>
+      <select id="f_matMother">
+        ${DB.mothers.map(m=>`<option value="${m.id}" ${prefillMotherId===m.id?'selected':''}>${m.name}${m.breed && m.breed!=='غير محدد' ? ' · '+m.breed : ''}</option>`).join('')}
+      </select>
+    </div>
+    <div class="field">
+      <label>الذكر</label>
+      <select id="f_matMale">
+        ${DB.males.map(x=>`<option value="${x.id}">${x.name}${x.breed && x.breed!=='غير محدد' ? ' · '+x.breed : ''}</option>`).join('')}
+      </select>
+    </div>
+    <div class="field">
+      <label>تاريخ التلقيح</label>
+      <input id="f_matDate" type="date" value="${todayISO()}">
+    </div>
+    <p class="sub">هيتحدد تلقائيًا: ميعاد الجس (+١٤ يوم) والميعاد المتوقع للولادة (+٣٠ يوم).</p>
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeModal()">إلغاء</button>
+      <button class="btn" onclick="saveMating()">تسجيل</button>
+    </div>
+  `);
+}
+function saveMating(){
+  const motherId = document.getElementById('f_matMother').value;
+  const maleId = document.getElementById('f_matMale').value;
+  const matingDate = document.getElementById('f_matDate').value;
+  if(!motherId || !maleId || !matingDate){ toast('املأ كل البيانات'); return; }
+  DB.matings.push({
+    id: uid(), motherId, maleId, matingDate,
+    gisDate: addDays(matingDate,14), expectedBirth: addDays(matingDate,30),
+    actualBirthDate:null, birthCount:null,
+    weanDate:null, weanCount:null,
+    converted:false
+  });
+  saveDB(); closeModal(); render();
+  toast('تم تسجيل التلقيح ✅');
+}
+function deleteMating(id){
+  if(!confirm('متأكد إنك عايز تمسح عملية التلقيح دي؟')) return;
+  DB.matings = DB.matings.filter(x=>x.id!==id);
+  saveDB(); currentPage='matings'; render();
+}
+
+function openMatingDetail(id){
+  const mt = DB.matings.find(x=>x.id===id);
+  if(!mt) return;
+  currentPage = 'matings';
+  document.getElementById('content').innerHTML = renderMatingDetail(mt);
+  const mom = DB.mothers.find(x=>x.id===mt.motherId);
+  const male = DB.males.find(x=>x.id===mt.maleId);
+  document.getElementById('pageTitle').textContent = `${mom?mom.name:'؟'} × ${male?male.name:'؟'}`;
+  document.getElementById('pageSub').textContent = 'تفاصيل عملية التلقيح';
+  document.getElementById('topbarActions').innerHTML = `
+    <button class="btn secondary" onclick="render()">⟵ رجوع للقائمة</button>
+    <button class="btn danger-outline" onclick="deleteMating('${mt.id}')">حذف</button>
+  `;
+  renderNav();
+}
+
+function renderMatingDetail(mt){
+  const mom = DB.mothers.find(x=>x.id===mt.motherId);
+  const male = DB.males.find(x=>x.id===mt.maleId);
+  const momPhoto = mom && mom.photo ? `style="background-image:url('${mom.photo}')"` : '';
+  const malePhoto = male && male.photo ? `style="background-image:url('${male.photo}')"` : '';
+
+  const rows = [
+    {key:'matingDate', label:'تاريخ التلقيح', type:'date'},
+    {key:'gisDate', label:'ميعاد الجس (تلقائي)', type:'date'},
+    {key:'expectedBirth', label:'الميعاد المتوقع للولادة (تلقائي)', type:'date'},
+    {key:'actualBirthDate', label:'تاريخ الولادة الفعلي', type:'date'},
+    {key:'birthCount', label:'عدد الأولاد المولودين', type:'number'},
+  ];
+  const timelineHtml = rows.map(r=>{
+    const val = mt[r.key];
+    const display = r.type==='date' ? fmtDate(val) : (val!==null && val!==undefined && val!=='' ? val : '—');
+    const alertNear = r.type==='date' && val && daysUntil(val)<=3;
+    return `
+    <div class="tl-row">
+      <div class="k">${r.label}</div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="v ${!val?'empty-val':''}">${display}${alertNear?' 🔔':''}</div>
+        ${mt.converted ? '' : `<button class="btn small secondary" onclick="editMatingField('${mt.id}','${r.key}','${r.type}')">تعديل</button>`}
+      </div>
+    </div>`;
+  }).join('');
+
+  let weanSection = '';
+  if(mt.converted){
+    weanSection = `
+    <div class="section">
+      <div class="section-title">🌾 الفطام</div>
+      <div class="empty" style="padding:16px;">تم تسجيل الفطام (${mt.weanCount||'—'} أرنب بتاريخ ${fmtDate(mt.weanDate)}) وتحولت الدفعة لصفحة "التسمين" ✅</div>
+    </div>`;
+  } else if(mt.actualBirthDate){
+    const autoWean = addDays(mt.actualBirthDate, 35);
+    weanSection = `
+    <div class="section">
+      <div class="section-title">🌾 تسجيل الفطام</div>
+      <div class="tl-row">
+        <div class="k">ميعاد الفطام المتوقع (تلقائي)</div>
+        <div class="v">${fmtDate(autoWean)}${daysUntil(autoWean)<=3?' 🔔':''}</div>
+      </div>
+      <div class="field-row" style="margin-top:12px;">
+        <div class="field"><label>عدد الفطام</label><input id="f_weanCount" type="number" placeholder="مثال: 5"></div>
+        <div class="field"><label>تاريخ الفطام الفعلي</label><input id="f_weanDate" type="date" value="${autoWean}"></div>
+      </div>
+      <div class="field"><label>وزن الدفعة (اختياري، كجم)</label><input id="f_weanWeight" type="number" step="0.1" placeholder="مثال: 3.5"></div>
+      <button class="btn" onclick="completeWeaning('${mt.id}')">تسجيل الفطام وتحويلها للتسمين</button>
+    </div>`;
+  }
+
+  return `
+    <div class="section" style="margin-top:0;">
+      <div style="display:flex;gap:14px;">
+        <div class="mini-link-row" style="flex:1;cursor:pointer;" onclick="${mom?`openMotherDetail('${mom.id}')`:''}">
+          <div class="avatar" ${momPhoto}>${mom && mom.photo ? '' : '🐇'}</div>
+          <div><div style="font-weight:800;">${mom?mom.name:'أم محذوفة'}</div><div style="font-size:12px;color:var(--muted);">الأم</div></div>
+        </div>
+        <div class="mini-link-row" style="flex:1;cursor:pointer;" onclick="${male?`openMaleDetail('${male.id}')`:''}">
+          <div class="avatar" ${malePhoto}>${male && male.photo ? '' : '♂️'}</div>
+          <div><div style="font-weight:800;">${male?male.name:'ذكر محذوف'}</div><div style="font-size:12px;color:var(--muted);">الذكر</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">📅 دورة التلقيح</div>
+      <div class="timeline">${timelineHtml}</div>
+    </div>
+
+    ${weanSection}
+  `;
+}
+
+function editMatingField(id, key, type){
+  const mt = DB.matings.find(x=>x.id===id);
+  const current = mt[key] || '';
+  const label = {matingDate:'تاريخ التلقيح',gisDate:'ميعاد الجس',expectedBirth:'الميعاد المتوقع للولادة',actualBirthDate:'تاريخ الولادة الفعلي',birthCount:'عدد الأولاد المولودين'}[key];
+  openModal(`
+    <h2>تعديل: ${label}</h2>
+    <div class="field"><label>${label}</label><input id="fieldVal" type="${type}" value="${current}"></div>
+    ${key==='matingDate' ? '<p class="sub">هيتحدث ميعاد الجس والميعاد المتوقع للولادة تلقائيًا.</p>' : ''}
+    ${key==='actualBirthDate' ? '<p class="sub">هيتحدث ميعاد الفطام المتوقع تلقائيًا (+٣٥ يوم) وحالة الأم.</p>' : ''}
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeModal()">إلغاء</button>
+      <button class="btn" onclick="saveMatingField('${id}','${key}')">حفظ</button>
+    </div>
+  `);
+}
+function saveMatingField(id, key){
+  const mt = DB.matings.find(x=>x.id===id);
+  const val = document.getElementById('fieldVal').value;
+  mt[key] = val;
+  if(key==='matingDate' && val){
+    mt.gisDate = addDays(val,14);
+    mt.expectedBirth = addDays(val,30);
+  }
+  saveDB(); closeModal(); openMatingDetail(id);
+  toast('اتحفظ ✅');
+}
+
+function completeWeaning(matingId){
+  const mt = DB.matings.find(x=>x.id===matingId);
+  const weanCount = document.getElementById('f_weanCount').value;
+  const weanDate = document.getElementById('f_weanDate').value;
+  const weight = document.getElementById('f_weanWeight').value;
+  if(!weanCount || !weanDate){ toast('اكتب عدد الفطام والتاريخ'); return; }
+  mt.weanCount = weanCount;
+  mt.weanDate = weanDate;
+  mt.converted = true;
+  DB.fattening.push({
+    id: uid(), motherId: mt.motherId, maleId: mt.maleId,
+    weanDate, weanCount, weight: weight||null,
+    birthDate: mt.actualBirthDate,
+    saleAlertDate: mt.actualBirthDate ? addDays(mt.actualBirthDate,60) : null,
+    sourceMatingId: mt.id
+  });
+  saveDB(); openMatingDetail(matingId);
+  toast('تم تسجيل الفطام وتحويلها للتسمين ✅');
+}
+
+/* ======================= MALES ======================= */
+function renderMales(){
+  if(DB.males.length===0) return `<div class="empty">لسه مفيش ذكور مسجلين.</div>`;
+  const rows = DB.males.map(x=>{
+    const photo = x.photo ? `style="background-image:url('${x.photo}')"` : '';
+    const breedTxt = (x.breed && x.breed!=='غير محدد') ? x.breed : '';
+    const hasAlert = x.nextTreatmentDate && daysUntil(x.nextTreatmentDate)<=3;
+    return `
+    <div class="mother-row" onclick="openMaleDetail('${x.id}')">
+      <div class="mother-row-photo" ${photo}>${x.photo?'':'♂️'}</div>
+      <div class="mother-row-info">
+        <div class="mother-row-name">${x.name}${breedTxt?` <span style="font-weight:600;font-size:14px;color:var(--muted);">· ${breedTxt}</span>`:''}</div>
+        <div class="mother-row-meta">${hasAlert ? '🔔 فيه ميعاد علاج قريب' : 'مافيش مواعيد قريبة'}</div>
+      </div>
+    </div>`;
+  }).join('');
+  return `<div>${rows}</div>`;
+}
+
+function openMaleForm(existing){
+  const x = existing || {};
+  openModal(`
+    <h2>${existing?'تعديل بيانات الذكر':'إضافة ذكر'}</h2>
+    <div class="field"><label>اسم / رقم الذكر</label><input id="f_mname" value="${x.name||''}" placeholder="مثال: ٣" inputmode="numeric" pattern="[0-9]*"></div>
+    <div class="field">
+      <label>نوع الذكر (السلالة)</label>
+      <select id="f_mbreed">${BREEDS.map(b=>`<option value="${b}" ${x.breed===b?'selected':''}>${b}</option>`).join('')}</select>
+    </div>
+    <div class="field"><label>تاريخ الميلاد</label><input id="f_mbirth" type="date" value="${x.birthDate||''}"></div>
+    <div class="field">
+      <label>صورة الذكر (اختياري)</label>
+      <label class="photo-pick" style="cursor:pointer;">
+        <div class="photo-preview" id="mPhotoPreview" style="${x.photo?`background-image:url('${x.photo}')`:''}">${x.photo?'':'♂️'}</div>
+        <span class="btn secondary small" style="pointer-events:none;">اختيار / تصوير</span>
+        <input id="f_mphoto" type="file" accept="image/*" onchange="previewMalePhoto(this)" style="position:absolute;opacity:0;width:1px;height:1px;">
+      </label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeModal()">إلغاء</button>
+      <button class="btn" onclick="saveMale('${existing?existing.id:''}')">${existing?'حفظ التعديلات':'إضافة'}</button>
+    </div>
+  `);
+  window._malePhotoData = x.photo || null;
+}
+function previewMalePhoto(input){
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e=>{
+    window._malePhotoData = e.target.result;
+    const p = document.getElementById('mPhotoPreview');
+    p.style.backgroundImage = `url('${e.target.result}')`;
+    p.textContent='';
+  };
+  reader.readAsDataURL(file);
+}
+function saveMale(id){
+  const name = document.getElementById('f_mname').value.trim();
+  const birthDate = document.getElementById('f_mbirth').value;
+  const breed = document.getElementById('f_mbreed').value;
+  if(!name){ toast('اكتب اسم الذكر'); return; }
+  if(id){
+    const x = DB.males.find(y=>y.id===id);
+    x.name=name; x.birthDate=birthDate; x.breed=breed; x.photo = window._malePhotoData || x.photo || null;
+  } else {
+    DB.males.push({
+      id:uid(), name, birthDate, breed, photo: window._malePhotoData || null,
+      matingCount:null, successRate:null, meds:[], nextTreatmentDate:null, nextTreatmentName:null
+    });
+  }
+  saveDB(); closeModal(); render();
+  toast('تم الحفظ ✅');
+}
+function deleteMale(id){
+  if(!confirm('متأكد إنك عايز تمسح الذكر ده؟')) return;
+  DB.males = DB.males.filter(x=>x.id!==id);
+  saveDB(); currentPage='males'; render();
+}
+
+function openMaleDetail(id){
+  const x = DB.males.find(y=>y.id===id);
+  if(!x) return;
+  currentPage = 'males';
+  document.getElementById('content').innerHTML = renderMaleDetail(x);
+  document.getElementById('pageTitle').textContent = x.name;
+  document.getElementById('pageSub').textContent = 'بيانات الذكر الكاملة';
+  document.getElementById('topbarActions').innerHTML = `
+    <button class="btn secondary" onclick="render()">⟵ رجوع للقائمة</button>
+    <button class="btn secondary" onclick='openMaleForm(${JSON.stringify(x)})'>تعديل البيانات</button>
+    <button class="btn danger-outline" onclick="deleteMale('${x.id}')">حذف</button>
+  `;
+  renderNav();
+}
+
+function renderMaleDetail(x){
+  const photo = x.photo ? `style="background-image:url('${x.photo}')"` : '';
+  const treatDisplay = x.nextTreatmentDate ? fmtDate(x.nextTreatmentDate)+(x.nextTreatmentName?` — ${x.nextTreatmentName}`:'') : '—';
+  const treatNear = x.nextTreatmentDate && daysUntil(x.nextTreatmentDate)<=3;
+  const medsRows = (x.meds||[]).map((med,i)=>`
+    <tr><td>${med.name}</td><td>${fmtDate(med.date)}</td><td><button class="btn small danger-outline" onclick="removeMaleMed('${x.id}',${i})">حذف</button></td></tr>`).join('');
+
+  return `
+    <div class="detail-head">
+      <div class="detail-photo" ${photo}>${x.photo?'':'♂️'}</div>
+      <div>
+        <div style="font-weight:800;font-size:18px;">${x.name}</div>
+        <div style="color:var(--muted);font-size:13.5px;">${x.breed && x.breed!=='غير محدد' ? x.breed+' · ' : ''}تاريخ الميلاد: ${fmtDate(x.birthDate)}</div>
+        ${ageString(x.birthDate) ? `<div style="color:var(--primary-dark);font-size:12.5px;font-weight:700;margin-top:2px;">${ageString(x.birthDate)}</div>` : ''}
+      </div>
+    </div>
+
+    <div class="section" style="margin-top:0;">
+      <div class="section-title">📊 إحصائيات التلقيح</div>
+      <div class="timeline">
+        <div class="tl-row">
+          <div class="k">عدد مرات التلقيح</div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="v ${!x.matingCount?'empty-val':''}">${x.matingCount!=null && x.matingCount!=='' ? x.matingCount : '—'}</div>
+            <button class="btn small secondary" onclick="editMaleField('${x.id}','matingCount','number')">تعديل</button>
+          </div>
+        </div>
+        <div class="tl-row">
+          <div class="k">نسبة الإيجابية (%)</div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="v ${!x.successRate?'empty-val':''}">${x.successRate!=null && x.successRate!=='' ? x.successRate+'%' : '—'}</div>
+            <button class="btn small secondary" onclick="editMaleField('${x.id}','successRate','number')">تعديل</button>
+          </div>
+        </div>
+        <div class="tl-row">
+          <div class="k">ميعاد العلاج القادم</div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="v ${!x.nextTreatmentDate?'empty-val':''}">${treatDisplay}${treatNear?' 🔔':''}</div>
+            <button class="btn small secondary" onclick="editMaleTreatment('${x.id}')">تعديل</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">💊 سجل الأدوية والعلاجات</div>
+      <div class="field-row" style="margin-bottom:12px;">
+        <input id="mMedName" placeholder="اسم الدواء">
+        <input id="mMedDate" type="date" value="${todayISO()}">
+      </div>
+      <button class="btn small secondary" style="margin-bottom:14px;" onclick="addMaleMed('${x.id}')">+ إضافة دواء</button>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>الدواء</th><th>التاريخ</th><th></th></tr></thead>
+          <tbody>${medsRows || '<tr><td colspan="3" style="color:var(--muted);">لسه مفيش أدوية مسجلة</td></tr>'}</tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function editMaleField(id, key, type){
+  const x = DB.males.find(y=>y.id===id);
+  const current = x[key] !== null && x[key] !== undefined ? x[key] : '';
+  const label = {matingCount:'عدد مرات التلقيح', successRate:'نسبة الإيجابية (%)'}[key];
+  openModal(`
+    <h2>تعديل: ${label}</h2>
+    <div class="field"><label>${label}</label><input id="fieldVal" type="${type}" value="${current}"></div>
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeModal()">إلغاء</button>
+      <button class="btn" onclick="saveMaleField('${id}','${key}')">حفظ</button>
+    </div>
+  `);
+}
+function saveMaleField(id, key){
+  const x = DB.males.find(y=>y.id===id);
+  x[key] = document.getElementById('fieldVal').value;
+  saveDB(); closeModal(); openMaleDetail(id);
+  toast('اتحفظ ✅');
+}
+function editMaleTreatment(id){
+  const x = DB.males.find(y=>y.id===id);
+  openModal(`
+    <h2>تعديل: ميعاد العلاج القادم</h2>
+    <div class="field"><label>اسم العلاج/الدواء</label><input id="fieldValName" value="${x.nextTreatmentName||''}" placeholder="مثال: إيفوماك"></div>
+    <div class="field"><label>ميعاد العلاج القادم</label><input id="fieldVal" type="date" value="${x.nextTreatmentDate||''}"></div>
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeModal()">إلغاء</button>
+      <button class="btn" onclick="saveMaleTreatment('${id}')">حفظ</button>
+    </div>
+  `);
+}
+function saveMaleTreatment(id){
+  const x = DB.males.find(y=>y.id===id);
+  x.nextTreatmentName = document.getElementById('fieldValName').value.trim();
+  x.nextTreatmentDate = document.getElementById('fieldVal').value;
+  saveDB(); closeModal(); openMaleDetail(id);
+  toast('اتحفظ ✅');
+}
+function addMaleMed(id){
+  const name = document.getElementById('mMedName').value.trim();
+  const date = document.getElementById('mMedDate').value;
+  if(!name){ toast('اكتب اسم الدواء'); return; }
+  const x = DB.males.find(y=>y.id===id);
+  x.meds = x.meds || [];
+  x.meds.push({name, date});
+  saveDB(); openMaleDetail(id);
+  toast('اتضاف الدواء ✅');
+}
+function removeMaleMed(id, idx){
+  const x = DB.males.find(y=>y.id===id);
+  x.meds.splice(idx,1);
+  saveDB(); openMaleDetail(id);
+}
+
+/* ======================= FATTENING ======================= */
+function renderFattening(){
+  if(DB.fattening.length===0) return `<div class="empty">لسه مفيش دفعات تسمين مسجلة.</div>`;
+  const sorted = [...DB.fattening].sort((a,b)=> (b.weanDate||b.startDate||'').localeCompare(a.weanDate||a.startDate||''));
+  const rows = sorted.map(f=>{
+    if(f.motherId){
+      const mom = DB.mothers.find(x=>x.id===f.motherId);
+      const male = DB.males.find(x=>x.id===f.maleId);
+      const saleNear = f.saleAlertDate && daysUntil(f.saleAlertDate)<=3;
+      return `
+      <tr>
+        <td>${mom?mom.name:'—'} × ${male?male.name:'—'}</td>
+        <td>${f.weanCount||'—'}</td>
+        <td>${f.weight?f.weight+' كجم':'—'} <button class="btn small secondary" onclick="editFatteningWeight('${f.id}')">تعديل</button></td>
+        <td>${fmtDate(f.weanDate)}</td>
+        <td>${f.saleAlertDate?fmtDate(f.saleAlertDate):'—'}${saleNear?' 🔔':''}</td>
+        <td><button class="btn small danger-outline" onclick="deleteFattening('${f.id}')">حذف</button></td>
+      </tr>`;
+    }
+    return `
+      <tr>
+        <td>${f.name}</td><td>${f.count}</td><td>—</td><td>${fmtDate(f.startDate)}</td><td>—</td>
+        <td><button class="btn small danger-outline" onclick="deleteFattening('${f.id}')">حذف</button></td>
+      </tr>`;
+  }).join('');
+  return `<div class="table-wrap"><table>
+    <thead><tr><th>الدفعة</th><th>العدد</th><th>الوزن</th><th>تاريخ الفطام</th><th>ميعاد البيع المتوقع</th><th></th></tr></thead>
+    <tbody>${rows}</tbody></table></div>`;
+}
+function editFatteningWeight(id){
+  const f = DB.fattening.find(x=>x.id===id);
+  openModal(`
+    <h2>تعديل وزن الدفعة</h2>
+    <div class="field"><label>الوزن (كجم)</label><input id="fieldVal" type="number" step="0.1" value="${f.weight||''}"></div>
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeModal()">إلغاء</button>
+      <button class="btn" onclick="saveFatteningWeight('${id}')">حفظ</button>
+    </div>
+  `);
+}
+function saveFatteningWeight(id){
+  const f = DB.fattening.find(x=>x.id===id);
+  f.weight = document.getElementById('fieldVal').value;
+  saveDB(); closeModal(); render();
+  toast('اتحفظ ✅');
+}
+function openFatteningForm(){
+  openModal(`
+    <h2>دفعة تسمين جديدة</h2>
+    <div class="field"><label>اسم الدفعة</label><input id="f_fname" placeholder="مثال: دفعة سبتمبر"></div>
+    <div class="field-row">
+      <div class="field"><label>العدد</label><input id="f_fcount" type="number"></div>
+      <div class="field"><label>تاريخ البدء</label><input id="f_fstart" type="date" value="${todayISO()}"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeModal()">إلغاء</button>
+      <button class="btn" onclick="saveFattening()">إضافة</button>
+    </div>
+  `);
+}
+function saveFattening(){
+  const name = document.getElementById('f_fname').value.trim();
+  const count = document.getElementById('f_fcount').value;
+  const startDate = document.getElementById('f_fstart').value;
+  if(!name){ toast('اكتب اسم الدفعة'); return; }
+  DB.fattening.push({id:uid(), name, count, startDate});
+  saveDB(); closeModal(); render();
+  toast('تم الحفظ ✅');
+}
+function deleteFattening(id){
+  DB.fattening = DB.fattening.filter(x=>x.id!==id);
+  saveDB(); render();
+}
+
+/* ======================= VACCINATIONS ======================= */
+function renderVaccinations(){
+  if(DB.vaccinations.length===0) return `<div class="empty">لسه مفيش تطعيمات مسجلة.</div>`;
+  const rows = DB.vaccinations.map(v=>`
+    <tr>
+      <td>${v.rabbitName}</td><td>${v.vaccine}</td><td>${fmtDate(v.date)}</td>
+      <td><button class="btn small danger-outline" onclick="deleteVaccine('${v.id}')">حذف</button></td>
+    </tr>`).join('');
+  return `<div class="table-wrap"><table>
+    <thead><tr><th>الأرنب</th><th>التطعيم</th><th>التاريخ</th><th></th></tr></thead>
+    <tbody>${rows}</tbody></table></div>`;
+}
+function openVaccineForm(){
+  openModal(`
+    <h2>تطعيم جديد</h2>
+    <div class="field"><label>اسم/رقم الأرنب</label><input id="f_vname" placeholder="مثال: أم ١٢"></div>
+    <div class="field-row">
+      <div class="field"><label>اسم التطعيم</label><input id="f_vvac"></div>
+      <div class="field"><label>التاريخ</label><input id="f_vdate" type="date" value="${todayISO()}"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeModal()">إلغاء</button>
+      <button class="btn" onclick="saveVaccine()">إضافة</button>
+    </div>
+  `);
+}
+function saveVaccine(){
+  const rabbitName = document.getElementById('f_vname').value.trim();
+  const vaccine = document.getElementById('f_vvac').value.trim();
+  const date = document.getElementById('f_vdate').value;
+  if(!rabbitName || !vaccine){ toast('املأ البيانات'); return; }
+  DB.vaccinations.push({id:uid(), rabbitName, vaccine, date});
+  saveDB(); closeModal(); render();
+  toast('تم الحفظ ✅');
+}
+function deleteVaccine(id){
+  DB.vaccinations = DB.vaccinations.filter(x=>x.id!==id);
+  saveDB(); render();
+}
+
+/* ======================= FINANCE ======================= */
+function renderFinance(){
+  if(DB.finance.length===0) return `<div class="empty">لسه مفيش قيود مسجلة.</div>`;
+  const rows = DB.finance.map(f=>`
+    <tr>
+      <td>${f.item}</td><td>${f.price} ج.م</td><td>${fmtDate(f.date)}</td>
+      <td><button class="btn small danger-outline" onclick="deleteFinance('${f.id}')">حذف</button></td>
+    </tr>`).join('');
+  return `<div class="table-wrap"><table>
+    <thead><tr><th>البند</th><th>السعر</th><th>التاريخ</th><th></th></tr></thead>
+    <tbody>${rows}</tbody></table></div>`;
+}
+function openFinanceForm(){
+  openModal(`
+    <h2>قيد جديد</h2>
+    <div class="field"><label>البند</label><input id="f_item" placeholder="مثال: علف / لحم / بيع أرنب"></div>
+    <div class="field-row">
+      <div class="field"><label>السعر (ج.م)</label><input id="f_price" type="number"></div>
+      <div class="field"><label>التاريخ</label><input id="f_fdate" type="date" value="${todayISO()}"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeModal()">إلغاء</button>
+      <button class="btn" onclick="saveFinance()">إضافة</button>
+    </div>
+  `);
+}
+function saveFinance(){
+  const item = document.getElementById('f_item').value.trim();
+  const price = document.getElementById('f_price').value;
+  const date = document.getElementById('f_fdate').value;
+  if(!item){ toast('اكتب البند'); return; }
+  DB.finance.push({id:uid(), item, price, date});
+  saveDB(); closeModal(); render();
+  toast('تم الحفظ ✅');
+}
+function deleteFinance(id){
+  DB.finance = DB.finance.filter(x=>x.id!==id);
+  saveDB(); render();
+}
+
+/* ======================= INIT ======================= */
+render();
+</script>
+</body>
+</html>
