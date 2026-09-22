@@ -642,12 +642,13 @@ function renderMothersList(){
     const photo = m.photo ? `style="background-image:url('${m.photo}')"` : '';
     const breedTxt = (m.breed && m.breed!=='غير محدد') ? m.breed : '';
     const st = motherStatus(m.id);
+    const loc = (m.line || m.slot) ? `خط ${m.line||'—'} · عين ${m.slot||'—'}` : '';
     return `
     <div class="mother-row" onclick="openMotherDetail('${m.id}')">
       <div class="mother-row-photo" ${photo}>${m.photo?'':'🐇'}</div>
       <div class="mother-row-info">
         <div class="mother-row-name">${m.name}${breedTxt?` <span style="font-weight:600;font-size:14px;color:var(--muted);">· ${breedTxt}</span>`:''}</div>
-        <div class="mother-row-meta"><span class="status-chip ${st.cls}">${st.label}</span></div>
+        <div class="mother-row-meta"><span class="status-chip ${st.cls}">${st.label}</span>${loc?` <span style="color:var(--muted);">· ${loc}</span>`:''}</div>
       </div>
     </div>`;
   }).join('');
@@ -672,6 +673,10 @@ function openMotherForm(existing){
     <div class="field">
       <label>تاريخ الميلاد</label>
       <input id="f_birth" type="date" value="${m.birthDate||''}">
+    </div>
+    <div class="field-row">
+      <div class="field"><label>رقم الخط</label><input id="f_line" value="${m.line||''}" inputmode="numeric" pattern="[0-9]*" placeholder="مثال: 3"></div>
+      <div class="field"><label>رقم العين</label><input id="f_slot" value="${m.slot||''}" inputmode="numeric" pattern="[0-9]*" placeholder="مثال: 7"></div>
     </div>
     <div class="field">
       <label>صورة الأم (اختياري)</label>
@@ -727,13 +732,15 @@ function saveMother(id){
   const birth = document.getElementById('f_birth').value;
   const breed = document.getElementById('f_breed').value;
   const notes = document.getElementById('f_notes').value.trim();
+  const line = document.getElementById('f_line').value.trim();
+  const slot = document.getElementById('f_slot').value.trim();
   if(!name){ toast('اكتب اسم الأم'); return; }
   if(id){
     const m = DB.mothers.find(x=>x.id===id);
-    m.name=name; m.birthDate=birth; m.breed=breed; m.notes=notes; m.photo = window._photoData || m.photo || null;
+    m.name=name; m.birthDate=birth; m.breed=breed; m.notes=notes; m.line=line; m.slot=slot; m.photo = window._photoData || m.photo || null;
   } else {
     DB.mothers.push({
-      id: uid(), name, birthDate: birth, breed, notes, photo: window._photoData || null,
+      id: uid(), name, birthDate: birth, breed, notes, line, slot, photo: window._photoData || null,
       meds:[], nextTreatmentDate:null, nextTreatmentName:null
     });
   }
@@ -814,6 +821,7 @@ function renderMotherDetail(m){
         <div style="font-weight:800;font-size:18px;">${m.name}</div>
         <div style="color:var(--muted);font-size:13.5px;">${m.breed && m.breed!=='غير محدد' ? m.breed+' · ' : ''}تاريخ الميلاد: ${fmtDate(m.birthDate)}</div>
         ${ageString(m.birthDate) ? `<div style="color:var(--primary-dark);font-size:12.5px;font-weight:700;margin-top:2px;">${ageString(m.birthDate)}</div>` : ''}
+        ${(m.line || m.slot) ? `<div style="color:var(--muted);font-size:12px;margin-top:2px;">📍 خط ${m.line||'—'} · عين ${m.slot||'—'}</div>` : ''}
         <div style="margin-top:6px;"><span class="status-chip ${st.cls}">${st.label}</span></div>
       </div>
     </div>
@@ -1226,12 +1234,13 @@ function renderMales(){
     const photo = x.photo ? `style="background-image:url('${x.photo}')"` : '';
     const breedTxt = (x.breed && x.breed!=='غير محدد') ? x.breed : '';
     const hasAlert = x.nextTreatmentDate && daysUntil(x.nextTreatmentDate)<=3;
+    const loc = (x.line || x.slot) ? `خط ${x.line||'—'} · عين ${x.slot||'—'}` : '';
     return `
     <div class="mother-row" onclick="openMaleDetail('${x.id}')">
       <div class="mother-row-photo" ${photo}>${x.photo?'':'♂️'}</div>
       <div class="mother-row-info">
         <div class="mother-row-name">${x.name}${breedTxt?` <span style="font-weight:600;font-size:14px;color:var(--muted);">· ${breedTxt}</span>`:''}</div>
-        <div class="mother-row-meta">${hasAlert ? '🔔 فيه ميعاد علاج قريب' : 'مافيش مواعيد قريبة'}</div>
+        <div class="mother-row-meta">${hasAlert ? '🔔 فيه ميعاد علاج قريب' : (loc || 'مافيش مواعيد قريبة')}</div>
       </div>
     </div>`;
   }).join('');
@@ -1248,6 +1257,10 @@ function openMaleForm(existing){
       <select id="f_mbreed">${BREEDS.map(b=>`<option value="${b}" ${x.breed===b?'selected':''}>${b}</option>`).join('')}</select>
     </div>
     <div class="field"><label>تاريخ الميلاد</label><input id="f_mbirth" type="date" value="${x.birthDate||''}"></div>
+    <div class="field-row">
+      <div class="field"><label>رقم الخط</label><input id="f_mline" value="${x.line||''}" inputmode="numeric" pattern="[0-9]*" placeholder="مثال: 3"></div>
+      <div class="field"><label>رقم العين</label><input id="f_mslot" value="${x.slot||''}" inputmode="numeric" pattern="[0-9]*" placeholder="مثال: 7"></div>
+    </div>
     <div class="field">
       <label>صورة الذكر (اختياري)</label>
       <label class="photo-pick" style="cursor:pointer;">
@@ -1277,13 +1290,15 @@ function saveMale(id){
   const name = document.getElementById('f_mname').value.trim();
   const birthDate = document.getElementById('f_mbirth').value;
   const breed = document.getElementById('f_mbreed').value;
+  const line = document.getElementById('f_mline').value.trim();
+  const slot = document.getElementById('f_mslot').value.trim();
   if(!name){ toast('اكتب اسم الذكر'); return; }
   if(id){
     const x = DB.males.find(y=>y.id===id);
-    x.name=name; x.birthDate=birthDate; x.breed=breed; x.photo = window._malePhotoData || x.photo || null;
+    x.name=name; x.birthDate=birthDate; x.breed=breed; x.line=line; x.slot=slot; x.photo = window._malePhotoData || x.photo || null;
   } else {
     DB.males.push({
-      id:uid(), name, birthDate, breed, photo: window._malePhotoData || null,
+      id:uid(), name, birthDate, breed, line, slot, photo: window._malePhotoData || null,
       matingCount:null, successRate:null, meds:[], nextTreatmentDate:null, nextTreatmentName:null
     });
   }
@@ -1325,6 +1340,7 @@ function renderMaleDetail(x){
         <div style="font-weight:800;font-size:18px;">${x.name}</div>
         <div style="color:var(--muted);font-size:13.5px;">${x.breed && x.breed!=='غير محدد' ? x.breed+' · ' : ''}تاريخ الميلاد: ${fmtDate(x.birthDate)}</div>
         ${ageString(x.birthDate) ? `<div style="color:var(--primary-dark);font-size:12.5px;font-weight:700;margin-top:2px;">${ageString(x.birthDate)}</div>` : ''}
+        ${(x.line || x.slot) ? `<div style="color:var(--muted);font-size:12px;margin-top:2px;">📍 خط ${x.line||'—'} · عين ${x.slot||'—'}</div>` : ''}
       </div>
     </div>
 
