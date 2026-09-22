@@ -7,6 +7,7 @@
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4CAF82">
 <style>
 :root{
   box-sizing:border-box;
@@ -47,7 +48,7 @@ body{
 }
 .brand{display:flex;align-items:center;gap:10px;margin-bottom:26px;padding:0 6px;}
 .brand-mark{width:36px;height:36px;border-radius:10px;background:var(--primary);display:flex;align-items:center;justify-content:center;font-size:18px;flex:0 0 36px;}
-.brand-text{font-weight:800;font-size:17px;line-height:1.2;}
+.brand-text{font-weight:800;font-size:26px;line-height:1.2;}
 .brand-sub{font-size:11px;opacity:.75;font-weight:400;}
 nav{display:flex;flex-direction:column;gap:4px;}
 .nav-item{
@@ -178,7 +179,7 @@ tr:last-child td{border-bottom:none;}
     padding:10px 14px calc(10px + env(safe-area-inset-top,0px));
     padding-top:calc(10px + env(safe-area-inset-top,0px));
     background:var(--primary-dark);color:#fff;
-    font-weight:800;font-size:15px;letter-spacing:.3px;
+    font-weight:800;font-size:24px;letter-spacing:.3px;
   }
   .mobile-brand .ico{font-size:17px;}
 }
@@ -231,6 +232,7 @@ tr:last-child td{border-bottom:none;}
         </div>
       </div>
       <div id="topbarActions"></div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);margin-top:6px;">نسخة التطبيق <strong id="appVersion">2.0.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
     </div>
     <div id="content"></div>
   </main>
@@ -248,6 +250,7 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 /* ======================= DATA LAYER ======================= */
+const APP_VERSION = '2.0.0';
 const DB_KEY = 'rabbitFarmDB_v1';
 function loadDB(){
   try{
@@ -1036,7 +1039,7 @@ function openMatingForm(prefillMotherId){
       <label>تاريخ التلقيح</label>
       <input id="f_matDate" type="date" value="${todayISO()}">
     </div>
-    <p class="sub">هيتحدد تلقائيًا: ميعاد الجس (+١٤ يوم) والميعاد المتوقع للولادة (+٣٠ يوم).</p>
+    <p class="sub">هيتحدد تلقائيًا: ميعاد الجس (+١٤ يوم) والميعاد المتوقع للولادة (+٣١ يوم).</p>
     <div class="modal-actions">
       <button class="btn secondary" onclick="closeModal()">إلغاء</button>
       <button class="btn" onclick="saveMating()">تسجيل</button>
@@ -1050,7 +1053,7 @@ function saveMating(){
   if(!motherId || !maleId || !matingDate){ toast('املأ كل البيانات'); return; }
   DB.matings.push({
     id: uid(), motherId, maleId, matingDate,
-    gisDate: addDays(matingDate,14), expectedBirth: addDays(matingDate,30),
+    gisDate: addDays(matingDate,14), expectedBirth: addDays(matingDate,31),
     actualBirthDate:null, birthCount:null,
     weanDate:null, weanCount:null,
     converted:false
@@ -1176,7 +1179,7 @@ function saveMatingField(id, key){
   mt[key] = val;
   if(key==='matingDate' && val){
     mt.gisDate = addDays(val,14);
-    mt.expectedBirth = addDays(val,30);
+    mt.expectedBirth = addDays(val,31);
   }
   saveDB(); closeModal(); openMatingDetail(id);
   toast('اتحفظ ✅');
@@ -1639,6 +1642,28 @@ setInterval(checkAndPlayAlertSound, 3*60*1000);
 
 /* ======================= INIT ======================= */
 render();
+</script>
+
+<script>
+/* ======================= PWA / AUTO UPDATE ======================= */
+let _waitingWorker = null;
+function showUpdateButton(){ const b=document.getElementById('updateBtn'); if(b) b.style.display='inline-flex'; }
+function applyUpdate(){ if(_waitingWorker){ _waitingWorker.postMessage({type:'SKIP_WAITING'}); } else { location.reload(); } }
+if('serviceWorker' in navigator){
+  window.addEventListener('load', async ()=>{
+    try{
+      const reg = await navigator.serviceWorker.register('./sw.js');
+      if(reg.waiting){ _waitingWorker=reg.waiting; showUpdateButton(); }
+      reg.addEventListener('updatefound', ()=>{
+        const w=reg.installing;
+        if(w) w.addEventListener('statechange', ()=>{
+          if(w.state==='installed' && navigator.serviceWorker.controller){ _waitingWorker=w; showUpdateButton(); }
+        });
+      });
+      navigator.serviceWorker.addEventListener('controllerchange', ()=>location.reload());
+    }catch(e){ console.warn('PWA update unavailable',e); }
+  });
+}
 </script>
 </body>
 </html>
