@@ -254,13 +254,14 @@ function loadDB(){
     const raw = localStorage.getItem(DB_KEY);
     if(raw) return JSON.parse(raw);
   }catch(e){}
-  return { mothers:[], males:[], matings:[], fattening:[], vaccinations:[], finance:[] };
+  return { mothers:[], males:[], matings:[], fattening:[], vaccinations:[], finance:[], settings:{whatsapp:'201095222441'} };
 }
 function saveDB(){
   try{ localStorage.setItem(DB_KEY, JSON.stringify(DB)); }catch(e){ toast('تعذر الحفظ محليًا'); }
 }
 let DB = loadDB();
-const WHATSAPP_NUMBER = '201095222441'; // 01095222441 بصيغة دولية
+if(!DB.settings) DB.settings = {whatsapp:'201095222441'};
+const WHATSAPP_NUMBER_DEFAULT = '201095222441';
 
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
 function todayISO(){ return new Date().toISOString().slice(0,10); }
@@ -310,6 +311,42 @@ function toast(msg){
   document.getElementById('toastWrap').appendChild(el);
   setTimeout(()=>el.remove(),2600);
 }
+function openSettings(){
+  openModal(`
+    <h2>⚙️ الإعدادات</h2>
+    <div class="field">
+      <label>رقم الواتساب لاستقبال التنبيهات</label>
+      <input id="f_whatsapp" value="${DB.settings.whatsapp||''}" placeholder="مثال: 201095222441" inputmode="numeric">
+      <p class="sub" style="margin-top:6px;">اكتب الرقم بصيغة دولية من غير + أو أصفار زيادة (مصر: 20 ثم الرقم بدون الصفر الأول).</p>
+    </div>
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeModal()">إلغاء</button>
+      <button class="btn" onclick="saveSettings()">حفظ</button>
+    </div>
+    <div style="margin-top:26px;padding-top:18px;border-top:1px solid var(--line);">
+      <p class="sub" style="margin-bottom:10px;">مسح كل البيانات (الأمهات، الذكور، التلقيح، التسمين...) — لا يمكن التراجع عنه.</p>
+      <button class="btn danger-outline" onclick="resetAllData()">🗑️ مسح كل البيانات</button>
+    </div>
+    <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:12px;">
+      خير الطبيعة - إدارة الأرانب
+    </div>
+  `);
+}
+function saveSettings(){
+  const wa = document.getElementById('f_whatsapp').value.trim();
+  if(!wa){ toast('اكتب رقم الواتساب'); return; }
+  DB.settings.whatsapp = wa;
+  saveDB(); closeModal();
+  toast('اتحفظت الإعدادات ✅');
+}
+function resetAllData(){
+  if(!confirm('متأكد؟ هيتمسح كل شيء ومفيش رجوع.')) return;
+  if(!confirm('تأكيد أخير: هتتمسح كل الأمهات والذكور وسجلات التلقيح والتسمين. متأكد؟')) return;
+  const wa = DB.settings.whatsapp;
+  DB = { mothers:[], males:[], matings:[], fattening:[], vaccinations:[], finance:[], settings:{whatsapp:wa} };
+  saveDB(); closeModal(); currentPage='dashboard'; render();
+  toast('اتمسحت كل البيانات');
+}
 function exportBackup(){
   try{
     const dataStr = JSON.stringify(DB, null, 2);
@@ -347,8 +384,8 @@ const BREEDS = ['غير محدد','بلدي','خليط','نيوزلندي','رك
 const PAGES = [
   {id:'dashboard', label:'الرئيسية', ico:'🏠'},
   {id:'mothers', label:'الأمهات', ico:'🐰'},
-  {id:'matings', label:'التلقيح', ico:'❤️'},
   {id:'males', label:'الذكور', ico:'♂️'},
+  {id:'matings', label:'التلقيح', ico:'❤️'},
   {id:'fattening', label:'التسمين', ico:'📈'},
   {id:'vaccinations', label:'التطعيمات', ico:'💉'},
   {id:'finance', label:'الحسابات والأسعار', ico:'💰'},
@@ -466,7 +503,7 @@ function getUpcomingAlerts(){
 }
 
 function waLink(text){
-  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`;
+  return `https://wa.me/${DB.settings.whatsapp || WHATSAPP_NUMBER_DEFAULT}?text=${encodeURIComponent(text)}`;
 }
 
 /* ======================= MODAL HELPERS ======================= */
@@ -513,6 +550,8 @@ function render(){
   actions.innerHTML = '';
   if(currentPage==='mothers'){
     actions.innerHTML = `<button class="btn" onclick="openMotherForm()">+ إضافة أم جديدة</button>`;
+  } else if(currentPage==='dashboard'){
+    actions.innerHTML = `<button class="btn secondary" onclick="openSettings()">⚙️ الإعدادات</button>`;
   } else if(currentPage==='matings'){
     actions.innerHTML = `<button class="btn" onclick="openMatingForm()">+ تسجيل تلقيح جديد</button>`;
   } else if(currentPage==='males'){
@@ -1523,6 +1562,46 @@ function deleteFinance(id){
   DB.finance = DB.finance.filter(x=>x.id!==id);
   saveDB(); render();
 }
+
+/* ======================= ALERT SOUND ======================= */
+function playAlertSound(){
+  try{
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const beep = (freq, start, dur)=>{
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime+start);
+      gain.gain.exponentialRampToValueAtTime(0.35, ctx.currentTime+start+0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime+start+dur);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(ctx.currentTime+start);
+      osc.stop(ctx.currentTime+start+dur+0.03);
+    };
+    beep(880, 0, 0.15);
+    beep(1046, 0.18, 0.2);
+  }catch(e){}
+}
+let _audioUnlocked = false;
+function unlockAudioOnce(){ _audioUnlocked = true; }
+['click','touchstart'].forEach(evt=>{
+  document.addEventListener(evt, unlockAudioOnce, {once:true});
+});
+function checkAndPlayAlertSound(){
+  if(!_audioUnlocked) return;
+  const alerts = getUpcomingAlerts();
+  const sig = alerts.map(a=>a.motherId+'|'+a.label+'|'+a.date).sort().join(';');
+  let lastSig = null;
+  try{ lastSig = localStorage.getItem('lastAlertSig'); }catch(e){}
+  if(alerts.length > 0 && sig !== lastSig){
+    playAlertSound();
+  }
+  try{ localStorage.setItem('lastAlertSig', sig); }catch(e){}
+}
+document.addEventListener('click', checkAndPlayAlertSound);
+document.addEventListener('touchstart', checkAndPlayAlertSound);
+setInterval(checkAndPlayAlertSound, 3*60*1000);
 
 /* ======================= INIT ======================= */
 render();
