@@ -636,17 +636,35 @@ function openMotherForm(existing){
   `);
   window._photoData = m.photo || null;
 }
+function compressImage(file, callback){
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const img = new Image();
+    img.onload = function(){
+      const maxDim = 480;
+      let w = img.width, h = img.height;
+      if(w > h){ if(w > maxDim){ h = Math.round(h*maxDim/w); w = maxDim; } }
+      else { if(h > maxDim){ w = Math.round(w*maxDim/h); h = maxDim; } }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      callback(canvas.toDataURL('image/jpeg', 0.7));
+    };
+    img.onerror = function(){ toast('تعذرت قراءة الصورة'); };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
 function previewPhoto(input){
   const file = input.files[0];
   if(!file) return;
-  const reader = new FileReader();
-  reader.onload = e=>{
-    window._photoData = e.target.result;
+  compressImage(file, function(dataUrl){
+    window._photoData = dataUrl;
     const p = document.getElementById('photoPreview');
-    p.style.backgroundImage = `url('${e.target.result}')`;
+    p.style.backgroundImage = `url('${dataUrl}')`;
     p.textContent='';
-  };
-  reader.readAsDataURL(file);
+  });
 }
 function saveMother(id){
   const name = document.getElementById('f_name').value.trim();
@@ -1192,14 +1210,12 @@ function openMaleForm(existing){
 function previewMalePhoto(input){
   const file = input.files[0];
   if(!file) return;
-  const reader = new FileReader();
-  reader.onload = e=>{
-    window._malePhotoData = e.target.result;
+  compressImage(file, function(dataUrl){
+    window._malePhotoData = dataUrl;
     const p = document.getElementById('mPhotoPreview');
-    p.style.backgroundImage = `url('${e.target.result}')`;
+    p.style.backgroundImage = `url('${dataUrl}')`;
     p.textContent='';
-  };
-  reader.readAsDataURL(file);
+  });
 }
 function saveMale(id){
   const name = document.getElementById('f_mname').value.trim();
