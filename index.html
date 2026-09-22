@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>مزرعتي - إدارة الأرانب</title>
+<title>خير الطبيعة - إدارة الأرانب</title>
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="manifest" href="manifest.json">
@@ -166,6 +166,19 @@ tr:last-child td{border-bottom:none;}
 .menu-btn{display:none;}
 .backdrop-mobile{display:none;}
 
+.mobile-brand{display:none;}
+@media (max-width:760px){
+  .app{flex-direction:column;}
+  .mobile-brand{
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    padding:10px 14px calc(10px + env(safe-area-inset-top,0px));
+    padding-top:calc(10px + env(safe-area-inset-top,0px));
+    background:var(--primary-dark);color:#fff;
+    font-weight:800;font-size:15px;letter-spacing:.3px;
+  }
+  .mobile-brand .ico{font-size:17px;}
+}
+
 /* ===== Bottom tab bar (mobile) ===== */
 .bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:45;
   background:var(--surface);border-top:1px solid var(--line);
@@ -190,12 +203,14 @@ tr:last-child td{border-bottom:none;}
 <body>
 <div class="app">
 
+  <div class="mobile-brand">🐇 <span>خير الطبيعة</span></div>
+
   <div class="backdrop-mobile" id="backdrop" onclick="closeSidebar()"></div>
   <aside class="sidebar" id="sidebar">
     <div class="brand">
       <div class="brand-mark">🐇</div>
       <div>
-        <div class="brand-text">مزرعتي</div>
+        <div class="brand-text">خير الطبيعة</div>
         <div class="brand-sub">إدارة الأرانب</div>
       </div>
     </div>
@@ -519,13 +534,6 @@ function render(){
 /* ======================= DASHBOARD ======================= */
 function renderDashboard(){
   const alerts = getUpcomingAlerts();
-  const backupBar = `
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;">
-      <button class="btn secondary small" onclick="exportBackup()">📤 تصدير نسخة احتياطية</button>
-      <label class="btn secondary small" style="cursor:pointer;">📥 استيراد نسخة احتياطية
-        <input type="file" accept="application/json" style="display:none;" onchange="importBackup(this)">
-      </label>
-    </div>`;
   const stats = `
     <div class="grid">
       <div class="stat-card"><div class="num">${DB.mothers.length}</div><div class="lbl">إجمالي الأمهات</div></div>
@@ -557,7 +565,6 @@ function renderDashboard(){
   }
 
   return `
-    ${backupBar}
     ${stats}
     <div class="section">
       <div class="section-title">🔔 التنبيهات القادمة (خلال ٣ أيام أو متأخرة)</div>
