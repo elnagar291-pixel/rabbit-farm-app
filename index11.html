@@ -7,7 +7,6 @@
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#4CAF82">
 <style>
 :root{
   box-sizing:border-box;
@@ -48,7 +47,7 @@ body{
 }
 .brand{display:flex;align-items:center;gap:10px;margin-bottom:26px;padding:0 6px;}
 .brand-mark{width:36px;height:36px;border-radius:10px;background:var(--primary);display:flex;align-items:center;justify-content:center;font-size:18px;flex:0 0 36px;}
-.brand-text{font-weight:800;font-size:26px;line-height:1.2;}
+.brand-text{font-weight:800;font-size:17px;line-height:1.2;}
 .brand-sub{font-size:11px;opacity:.75;font-weight:400;}
 nav{display:flex;flex-direction:column;gap:4px;}
 .nav-item{
@@ -179,7 +178,7 @@ tr:last-child td{border-bottom:none;}
     padding:10px 14px calc(10px + env(safe-area-inset-top,0px));
     padding-top:calc(10px + env(safe-area-inset-top,0px));
     background:var(--primary-dark);color:#fff;
-    font-weight:800;font-size:24px;letter-spacing:.3px;
+    font-weight:800;font-size:15px;letter-spacing:.3px;
   }
   .mobile-brand .ico{font-size:17px;}
 }
@@ -203,20 +202,6 @@ tr:last-child td{border-bottom:none;}
   .field-row{grid-template-columns:1fr;}
   .topbar{position:sticky;top:0;background:var(--bg);padding-top:4px;z-index:10;}
 }
-
-.finance-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;}
-.finance-box{padding:16px;border-radius:14px;border:1px solid var(--line);background:var(--surface);text-align:center;}
-.finance-box .amount{font-size:22px;font-weight:900;margin-top:5px;}
-.finance-income{color:#198754;background:#eaf8f0;border-color:#bfe8cf;}
-.finance-expense{color:#dc3545;background:#fff0f1;border-color:#f1c2c6;}
-.finance-profit{color:#0d6efd;background:#eef5ff;border-color:#c8dcff;}
-.finance-type{display:inline-block;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:800;}
-.finance-type.income{background:#d9f5e5;color:#137a45;}
-.finance-type.expense{background:#ffe0e3;color:#b4232f;}
-.finance-type.unknown{background:#eee;color:#666;}
-.finance-row-income{background:rgba(25,135,84,.045);}
-.finance-row-expense{background:rgba(220,53,69,.045);}
-@media(max-width:600px){.finance-summary{grid-template-columns:1fr;}}
 </style>
 </head>
 <body>
@@ -246,7 +231,6 @@ tr:last-child td{border-bottom:none;}
         </div>
       </div>
       <div id="topbarActions"></div>
-      <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);margin-top:6px;">نسخة التطبيق <strong id="appVersion">2.0.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
     </div>
     <div id="content"></div>
   </main>
@@ -264,7 +248,6 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 /* ======================= DATA LAYER ======================= */
-const APP_VERSION = '2.0.0';
 const DB_KEY = 'rabbitFarmDB_v1';
 function loadDB(){
   try{
@@ -1053,7 +1036,7 @@ function openMatingForm(prefillMotherId){
       <label>تاريخ التلقيح</label>
       <input id="f_matDate" type="date" value="${todayISO()}">
     </div>
-    <p class="sub">هيتحدد تلقائيًا: ميعاد الجس (+١٤ يوم) والميعاد المتوقع للولادة (+٣١ يوم).</p>
+    <p class="sub">هيتحدد تلقائيًا: ميعاد الجس (+١٤ يوم) والميعاد المتوقع للولادة (+٣٠ يوم).</p>
     <div class="modal-actions">
       <button class="btn secondary" onclick="closeModal()">إلغاء</button>
       <button class="btn" onclick="saveMating()">تسجيل</button>
@@ -1067,7 +1050,7 @@ function saveMating(){
   if(!motherId || !maleId || !matingDate){ toast('املأ كل البيانات'); return; }
   DB.matings.push({
     id: uid(), motherId, maleId, matingDate,
-    gisDate: addDays(matingDate,14), expectedBirth: addDays(matingDate,31),
+    gisDate: addDays(matingDate,14), expectedBirth: addDays(matingDate,30),
     actualBirthDate:null, birthCount:null,
     weanDate:null, weanCount:null,
     converted:false
@@ -1193,7 +1176,7 @@ function saveMatingField(id, key){
   mt[key] = val;
   if(key==='matingDate' && val){
     mt.gisDate = addDays(val,14);
-    mt.expectedBirth = addDays(val,31);
+    mt.expectedBirth = addDays(val,30);
   }
   saveDB(); closeModal(); openMatingDetail(id);
   toast('اتحفظ ✅');
@@ -1576,44 +1559,22 @@ function deleteVaccine(id){
 
 /* ======================= FINANCE ======================= */
 function renderFinance(){
-  const income = DB.finance.reduce((sum,f)=>sum + (f.type==='income' ? Number(f.price)||0 : 0),0);
-  const expense = DB.finance.reduce((sum,f)=>sum + (f.type==='expense' ? Number(f.price)||0 : 0),0);
-  const profit = income - expense;
-  const profitLabel = profit >= 0 ? 'صافي الربح' : 'صافي الخسارة';
-  const profitClass = profit >= 0 ? 'finance-profit' : 'finance-expense';
-  const summary = `<div class="finance-summary">
-    <div class="finance-box finance-income"><div>إجمالي الإيرادات</div><div class="amount">${income.toLocaleString('ar-EG')} ج.م</div></div>
-    <div class="finance-box finance-expense"><div>إجمالي المصروفات</div><div class="amount">${expense.toLocaleString('ar-EG')} ج.م</div></div>
-    <div class="finance-box ${profitClass}"><div>${profitLabel}</div><div class="amount">${Math.abs(profit).toLocaleString('ar-EG')} ج.م</div></div>
-  </div>`;
-  if(DB.finance.length===0) return summary + `<div class="empty">لسه مفيش قيود مسجلة. ابدأ بإضافة أول إيراد أو مصروف.</div>`;
-  const rows = DB.finance.slice().reverse().map(f=>{
-    const type = f.type==='income' ? 'income' : f.type==='expense' ? 'expense' : 'unknown';
-    const typeText = type==='income' ? 'إيراد' : type==='expense' ? 'مصروف' : 'قديم/غير محدد';
-    return `<tr class="finance-row-${type}">
-      <td>${f.item}</td>
-      <td><span class="finance-type ${type}">${typeText}</span></td>
-      <td><b>${Number(f.price||0).toLocaleString('ar-EG')} ج.م</b></td>
-      <td>${fmtDate(f.date)}</td>
+  if(DB.finance.length===0) return `<div class="empty">لسه مفيش قيود مسجلة.</div>`;
+  const rows = DB.finance.map(f=>`
+    <tr>
+      <td>${f.item}</td><td>${f.price} ج.م</td><td>${fmtDate(f.date)}</td>
       <td><button class="btn small danger-outline" onclick="deleteFinance('${f.id}')">حذف</button></td>
-    </tr>`;
-  }).join('');
-  return summary + `<div class="table-wrap"><table>
-    <thead><tr><th>البند</th><th>النوع</th><th>المبلغ</th><th>التاريخ</th><th></th></tr></thead>
+    </tr>`).join('');
+  return `<div class="table-wrap"><table>
+    <thead><tr><th>البند</th><th>السعر</th><th>التاريخ</th><th></th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
 }
 function openFinanceForm(){
   openModal(`
-    <h2>قيد حسابات جديد</h2>
-    <div class="field"><label>نوع القيد</label>
-      <select id="f_type">
-        <option value="expense">💸 مصروفات</option>
-        <option value="income">💰 إيرادات</option>
-      </select>
-    </div>
-    <div class="field"><label>البند</label><input id="f_item" placeholder="مثال: علف / بيع أرنب / دواء"></div>
+    <h2>قيد جديد</h2>
+    <div class="field"><label>البند</label><input id="f_item" placeholder="مثال: علف / لحم / بيع أرنب"></div>
     <div class="field-row">
-      <div class="field"><label>المبلغ (ج.م)</label><input id="f_price" type="number" min="0" step="0.01"></div>
+      <div class="field"><label>السعر (ج.م)</label><input id="f_price" type="number"></div>
       <div class="field"><label>التاريخ</label><input id="f_fdate" type="date" value="${todayISO()}"></div>
     </div>
     <div class="modal-actions">
@@ -1623,14 +1584,13 @@ function openFinanceForm(){
   `);
 }
 function saveFinance(){
-  const type = document.getElementById('f_type').value;
   const item = document.getElementById('f_item').value.trim();
   const price = document.getElementById('f_price').value;
   const date = document.getElementById('f_fdate').value;
-  if(!item || price==='' || Number(price)<0){ toast('اكتب البند والمبلغ بشكل صحيح'); return; }
-  DB.finance.push({id:uid(), item, price:Number(price), date, type});
+  if(!item){ toast('اكتب البند'); return; }
+  DB.finance.push({id:uid(), item, price, date});
   saveDB(); closeModal(); render();
-  toast(type==='income' ? 'تم تسجيل الإيراد 💰' : 'تم تسجيل المصروف 💸');
+  toast('تم الحفظ ✅');
 }
 function deleteFinance(id){
   DB.finance = DB.finance.filter(x=>x.id!==id);
@@ -1679,28 +1639,6 @@ setInterval(checkAndPlayAlertSound, 3*60*1000);
 
 /* ======================= INIT ======================= */
 render();
-</script>
-
-<script>
-/* ======================= PWA / AUTO UPDATE ======================= */
-let _waitingWorker = null;
-function showUpdateButton(){ const b=document.getElementById('updateBtn'); if(b) b.style.display='inline-flex'; }
-function applyUpdate(){ if(_waitingWorker){ _waitingWorker.postMessage({type:'SKIP_WAITING'}); } else { location.reload(); } }
-if('serviceWorker' in navigator){
-  window.addEventListener('load', async ()=>{
-    try{
-      const reg = await navigator.serviceWorker.register('./sw.js');
-      if(reg.waiting){ _waitingWorker=reg.waiting; showUpdateButton(); }
-      reg.addEventListener('updatefound', ()=>{
-        const w=reg.installing;
-        if(w) w.addEventListener('statechange', ()=>{
-          if(w.state==='installed' && navigator.serviceWorker.controller){ _waitingWorker=w; showUpdateButton(); }
-        });
-      });
-      navigator.serviceWorker.addEventListener('controllerchange', ()=>location.reload());
-    }catch(e){ console.warn('PWA update unavailable',e); }
-  });
-}
 </script>
 </body>
 </html>
