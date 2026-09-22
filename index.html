@@ -1418,25 +1418,59 @@ function renderFattening(){
       const mom = DB.mothers.find(x=>x.id===f.motherId);
       const male = DB.males.find(x=>x.id===f.maleId);
       const saleNear = f.saleAlertDate && daysUntil(f.saleAlertDate)<=3;
+      const momBreed = mom && mom.breed && mom.breed!=='غير محدد' ? mom.breed : '';
+      const maleBreed = male && male.breed && male.breed!=='غير محدد' ? male.breed : '';
+      const total = parseInt(f.weanCount)||0;
+      const sold = parseInt(f.soldCount)||0;
+      const remaining = total - sold;
+      const remainingTxt = total===0 ? '—' : (remaining<=0 ? 'اتباعت بالكامل ✅' : `${remaining} باقي`);
       return `
       <tr>
-        <td>${mom?mom.name:'—'} × ${male?male.name:'—'}</td>
+        <td>
+          ${mom?mom.name:'—'} × ${male?male.name:'—'}
+          ${(momBreed||maleBreed) ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;">${momBreed||'—'} × ${maleBreed||'—'}</div>` : ''}
+        </td>
         <td>${f.weanCount||'—'}</td>
+        <td>${remainingTxt} <button class="btn small secondary" onclick="editFatteningSold('${f.id}')">تسجيل بيع</button></td>
         <td>${f.weight?f.weight+' كجم':'—'} <button class="btn small secondary" onclick="editFatteningWeight('${f.id}')">تعديل</button></td>
         <td>${fmtDate(f.weanDate)}</td>
-        <td>${f.saleAlertDate?fmtDate(f.saleAlertDate):'—'}${saleNear?' 🔔':''}</td>
+        <td>${f.saleAlertDate?fmtDate(f.saleAlertDate):'—'}${saleNear && remaining>0?' 🔔':''}</td>
         <td><button class="btn small danger-outline" onclick="deleteFattening('${f.id}')">حذف</button></td>
       </tr>`;
     }
     return `
       <tr>
-        <td>${f.name}</td><td>${f.count}</td><td>—</td><td>${fmtDate(f.startDate)}</td><td>—</td>
+        <td>${f.name}</td><td>${f.count}</td><td>—</td><td>—</td><td>${fmtDate(f.startDate)}</td><td>—</td>
         <td><button class="btn small danger-outline" onclick="deleteFattening('${f.id}')">حذف</button></td>
       </tr>`;
   }).join('');
   return `<div class="table-wrap"><table>
-    <thead><tr><th>الدفعة</th><th>العدد</th><th>الوزن</th><th>تاريخ الفطام</th><th>ميعاد البيع المتوقع</th><th></th></tr></thead>
+    <thead><tr><th>الدفعة</th><th>العدد</th><th>الباقي</th><th>الوزن</th><th>تاريخ الفطام</th><th>ميعاد البيع المتوقع</th><th></th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
+}
+function editFatteningSold(id){
+  const f = DB.fattening.find(x=>x.id===id);
+  const total = parseInt(f.weanCount)||0;
+  const sold = parseInt(f.soldCount)||0;
+  openModal(`
+    <h2>تسجيل بيع</h2>
+    <p class="sub">العدد الكلي: ${total} — المباع لحد دلوقتي: ${sold} — الباقي: ${total-sold}</p>
+    <div class="field"><label>كام اتباع دلوقتي؟ (هيتضاف على المباع)</label><input id="fieldVal" type="number" min="0" placeholder="مثال: 2"></div>
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeModal()">إلغاء</button>
+      <button class="btn" onclick="saveFatteningSold('${id}')">حفظ</button>
+    </div>
+  `);
+}
+function saveFatteningSold(id){
+  const f = DB.fattening.find(x=>x.id===id);
+  const add = parseInt(document.getElementById('fieldVal').value)||0;
+  if(add<=0){ toast('اكتب عدد صحيح'); return; }
+  const total = parseInt(f.weanCount)||0;
+  f.soldCount = (parseInt(f.soldCount)||0) + add;
+  if(f.soldCount >= total) f.sold = true;
+  saveDB(); closeModal(); render();
+  toast('اتسجل البيع ✅');
 }
 function editFatteningWeight(id){
   const f = DB.fattening.find(x=>x.id===id);
