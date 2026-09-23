@@ -159,7 +159,7 @@ main{flex:1;padding:26px 30px 60px;max-width:100%;overflow-x:hidden;}
 
 table{width:100%;border-collapse:collapse;background:var(--surface);border-radius:12px;overflow:hidden;border:1px solid var(--line);}
 th,td{padding:10px 12px;text-align:right;font-size:13.5px;border-bottom:1px solid var(--line);}
-th{background:var(--primary-tint);color:var(--primary-dark);font-weight:800;}
+th{background:var(--primary-tint);color:var(--primary-dark);font-weight:800;font-size:11.5px;}
 tr:last-child td{border-bottom:none;}
 .table-wrap{overflow-x:auto;border-radius:12px;}
 
@@ -253,7 +253,7 @@ tr:last-child td{border-bottom:none;}
         </div>
         <div id="topbarActions"></div>
       </div>
-      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">2.5.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
+      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">2.5.1</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
     </div>
     <div id="content"></div>
   </main>
@@ -271,7 +271,7 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 /* ======================= DATA LAYER ======================= */
-const APP_VERSION = '2.5.0';
+const APP_VERSION = '2.5.1';
 const DB_KEY = 'rabbitFarmDB_v1';
 function loadDB(){
   try{
@@ -1510,8 +1510,8 @@ function renderFattening(){
           ${(momBreed||maleBreed) ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;">${momBreed||'—'} × ${maleBreed||'—'}</div>` : ''}
         </td>
         <td>${f.weanCount||'—'}</td>
-        <td>${remainingTxt} <button class="btn small secondary" style="min-width:78px;" onclick="editFatteningSold('${f.id}')">تسجيل بيع</button></td>
-        <td>${f.weight?f.weight+' كجم':'—'} <button class="btn small secondary" style="min-width:78px;" onclick="editFatteningWeight('${f.id}')">تعديل</button></td>
+        <td>${remainingTxt}<br><button class="btn small secondary" style="min-width:92px;white-space:nowrap;margin-top:4px;" onclick="editFatteningSold('${f.id}')">تسجيل بيع</button></td>
+        <td>${f.weight?f.weight+' كجم':'—'}<br><button class="btn small secondary" style="min-width:92px;white-space:nowrap;margin-top:4px;" onclick="editFatteningWeight('${f.id}')">تعديل</button></td>
         <td>${fmtDate(f.weanDate)}</td>
         <td>${f.saleAlertDate?fmtDate(f.saleAlertDate):'—'}${saleNear && remaining>0?' 🔔':''}</td>
         <td><button class="btn small danger-outline" onclick="deleteFattening('${f.id}')">حذف</button></td>
