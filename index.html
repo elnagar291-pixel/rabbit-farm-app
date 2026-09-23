@@ -204,19 +204,21 @@ tr:last-child td{border-bottom:none;}
   .topbar{position:sticky;top:0;background:var(--bg);padding-top:4px;z-index:10;}
 }
 
-.finance-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;}
-.finance-box{padding:16px;border-radius:14px;border:1px solid var(--line);background:var(--surface);text-align:center;}
-.finance-box .amount{font-size:22px;font-weight:900;margin-top:5px;}
-.finance-income{color:#198754;background:#eaf8f0;border-color:#bfe8cf;}
-.finance-expense{color:#dc3545;background:#fff0f1;border-color:#f1c2c6;}
-.finance-profit{color:#0d6efd;background:#eef5ff;border-color:#c8dcff;}
+.finance-bar{display:flex;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 8px;margin-bottom:16px;overflow-x:auto;}
+.finance-bar-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0;padding:0 4px;}
+.finance-bar-item .k{font-size:11.5px;color:var(--muted);font-weight:700;}
+.finance-bar-item .v{font-size:16px;font-weight:900;white-space:nowrap;}
+.finance-bar-item .v.income{color:#198754;}
+.finance-bar-item .v.expense{color:#dc3545;}
+.finance-bar-item .v.net-positive{color:#198754;}
+.finance-bar-item .v.net-negative{color:#dc3545;}
+.finance-bar-sep{width:1px;align-self:stretch;background:var(--line);flex:0 0 1px;}
 .finance-type{display:inline-block;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:800;}
 .finance-type.income{background:#d9f5e5;color:#137a45;}
 .finance-type.expense{background:#ffe0e3;color:#b4232f;}
 .finance-type.unknown{background:#eee;color:#666;}
 .finance-row-income{background:rgba(25,135,84,.045);}
 .finance-row-expense{background:rgba(220,53,69,.045);}
-@media(max-width:600px){.finance-summary{grid-template-columns:1fr;}}
 </style>
 </head>
 <body>
@@ -246,7 +248,7 @@ tr:last-child td{border-bottom:none;}
         </div>
       </div>
       <div id="topbarActions"></div>
-      <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);margin-top:6px;">نسخة التطبيق <strong id="appVersion">2.0.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);margin-top:6px;">نسخة التطبيق <strong id="appVersion">2.1.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
     </div>
     <div id="content"></div>
   </main>
@@ -264,7 +266,7 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 /* ======================= DATA LAYER ======================= */
-const APP_VERSION = '2.0.0';
+const APP_VERSION = '2.1.0';
 const DB_KEY = 'rabbitFarmDB_v1';
 function loadDB(){
   try{
@@ -405,7 +407,7 @@ const PAGES = [
   {id:'matings', label:'التلقيح', ico:'❤️'},
   {id:'fattening', label:'التسمين', ico:'📈'},
   {id:'vaccinations', label:'التطعيمات', ico:'💉'},
-  {id:'finance', label:'الحسابات والأسعار', ico:'💰'},
+  {id:'finance', label:'حسابات', ico:'💰'},
 ];
 let currentPage = 'dashboard';
 
@@ -1595,12 +1597,14 @@ function renderFinance(){
   const income = DB.finance.reduce((sum,f)=>sum + (f.type==='income' ? Number(f.price)||0 : 0),0);
   const expense = DB.finance.reduce((sum,f)=>sum + (f.type==='expense' ? Number(f.price)||0 : 0),0);
   const profit = income - expense;
-  const profitLabel = profit >= 0 ? 'صافي الربح' : 'صافي الخسارة';
-  const profitClass = profit >= 0 ? 'finance-profit' : 'finance-expense';
-  const summary = `<div class="finance-summary">
-    <div class="finance-box finance-income"><div>إجمالي الإيرادات</div><div class="amount">${income.toLocaleString('ar-EG')} ج.م</div></div>
-    <div class="finance-box finance-expense"><div>إجمالي المصروفات</div><div class="amount">${expense.toLocaleString('ar-EG')} ج.م</div></div>
-    <div class="finance-box ${profitClass}"><div>${profitLabel}</div><div class="amount">${Math.abs(profit).toLocaleString('ar-EG')} ج.م</div></div>
+  const netClass = profit >= 0 ? 'net-positive' : 'net-negative';
+  const netSign = profit >= 0 ? '+' : '−';
+  const summary = `<div class="finance-bar">
+    <div class="finance-bar-item"><span class="k">إيرادات</span><span class="v income">${income.toLocaleString('ar-EG')}</span></div>
+    <div class="finance-bar-sep"></div>
+    <div class="finance-bar-item"><span class="k">مصروفات</span><span class="v expense">${expense.toLocaleString('ar-EG')}</span></div>
+    <div class="finance-bar-sep"></div>
+    <div class="finance-bar-item"><span class="k">الصافي</span><span class="v ${netClass}">${netSign}${Math.abs(profit).toLocaleString('ar-EG')}</span></div>
   </div>`;
   if(DB.finance.length===0) return summary + `<div class="empty">لسه مفيش قيود مسجلة. ابدأ بإضافة أول إيراد أو مصروف.</div>`;
   const rows = DB.finance.slice().reverse().map(f=>{
