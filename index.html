@@ -176,10 +176,11 @@ tr:last-child td{border-bottom:none;}
   .stat-card .lbl{font-size:11.5px;}
   .mobile-brand{
     display:flex;align-items:center;justify-content:center;gap:8px;
-    padding:10px 14px calc(10px + env(safe-area-inset-top,0px));
+    padding:10px 14px;
     padding-top:calc(10px + env(safe-area-inset-top,0px));
     background:var(--primary-dark);color:#fff;
     font-weight:800;font-size:24px;letter-spacing:.3px;
+    position:sticky;top:0;z-index:50;
   }
   .mobile-brand .ico{font-size:17px;}
 }
@@ -201,7 +202,7 @@ tr:last-child td{border-bottom:none;}
   .bottom-nav{display:block;}
   main{padding:16px 14px calc(96px + env(safe-area-inset-bottom,0px));}
   .field-row{grid-template-columns:1fr;}
-  .topbar{position:sticky;top:0;background:var(--bg);padding-top:4px;z-index:10;}
+  .topbar{position:sticky;top:calc(48px + env(safe-area-inset-top,0px));background:var(--bg);padding-top:4px;z-index:10;}
 }
 
 .finance-bar{display:flex;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 8px;margin-bottom:16px;overflow-x:auto;}
@@ -248,7 +249,7 @@ tr:last-child td{border-bottom:none;}
         </div>
       </div>
       <div id="topbarActions"></div>
-      <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);margin-top:6px;">نسخة التطبيق <strong id="appVersion">2.1.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);margin-top:6px;">نسخة التطبيق <strong id="appVersion">2.3.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
     </div>
     <div id="content"></div>
   </main>
@@ -266,7 +267,7 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 /* ======================= DATA LAYER ======================= */
-const APP_VERSION = '2.1.0';
+const APP_VERSION = '2.3.0';
 const DB_KEY = 'rabbitFarmDB_v1';
 function loadDB(){
   try{
@@ -301,7 +302,7 @@ function fmtDate(d){
 }
 function motherStatus(motherId){
   const hasLitter = DB.matings.some(mt=>mt.motherId===motherId && !mt.converted && mt.actualBirthDate);
-  const hasPending = DB.matings.some(mt=>mt.motherId===motherId && !mt.converted && mt.matingDate && !mt.actualBirthDate);
+  const hasPending = DB.matings.some(mt=>mt.motherId===motherId && !mt.converted && !mt.failed && mt.matingDate && !mt.actualBirthDate);
   if(hasLitter && hasPending) return {label:'معاها فطام ومتلقحة', cls:'alert'};
   if(hasPending) return {label:'ملقحة', cls:'alert'};
   if(hasLitter) return {label:'معاها فطام', cls:'alert'};
@@ -481,6 +482,10 @@ function getUpcomingAlerts(){
     if(mt.converted) return;
     const mom = DB.mothers.find(x=>x.id===mt.motherId);
     const momName = mom ? mom.name : 'أم';
+    if(mt.failed){
+      alerts.push({motherId:mt.id, motherName:momName, label:'الجس سلبي - محتاج تلقيح جديد', ico:'❌', date:mt.gisDate, days:-999, isMating:true});
+      return;
+    }
     if(!mt.actualBirthDate){
       const checks = [
         {key:'gisDate', label:'ميعاد الجس', ico:'🩺'},
@@ -1009,7 +1014,9 @@ function removeMed(id, idx){
 /* ======================= MATINGS (التلقيح) ======================= */
 function matingStageLabel(mt){
   if(mt.converted) return {label:'اتفطمت وتحولت للتسمين', cls:'ok'};
+  if(mt.failed) return {label:'الجس سلبي - محتاج تلقيح جديد', cls:'alert'};
   if(mt.actualBirthDate) return {label:'معاها فطام - تحت المتابعة', cls:'alert'};
+  if(mt.gisResult==='positive') return {label:'الجس إيجابي - حامل مؤكد', cls:'alert'};
   if(mt.matingDate) return {label:'حامل - تحت المتابعة', cls:'alert'};
   return {label:'جديد', cls:'ok'};
 }
@@ -1036,7 +1043,7 @@ function renderMatingsList(){
   return `<div>${rows}</div>`;
 }
 
-function openMatingForm(prefillMotherId){
+function openMatingForm(prefillMotherId, prefillMaleId){
   if(DB.mothers.length===0 || DB.males.length===0){
     openModal(`
       <h2>تسجيل تلقيح جديد</h2>
@@ -1056,7 +1063,7 @@ function openMatingForm(prefillMotherId){
     <div class="field">
       <label>الذكر</label>
       <select id="f_matMale">
-        ${DB.males.map(x=>`<option value="${x.id}">${x.name}${x.breed && x.breed!=='غير محدد' ? ' · '+x.breed : ''}</option>`).join('')}
+        ${DB.males.map(x=>`<option value="${x.id}" ${prefillMaleId===x.id?'selected':''}>${x.name}${x.breed && x.breed!=='غير محدد' ? ' · '+x.breed : ''}</option>`).join('')}
       </select>
     </div>
     <div class="field">
@@ -1078,12 +1085,24 @@ function saveMating(){
   DB.matings.push({
     id: uid(), motherId, maleId, matingDate,
     gisDate: addDays(matingDate,14), expectedBirth: addDays(matingDate,31),
+    gisResult:null, failed:false,
     actualBirthDate:null, birthCount:null,
     weanDate:null, weanCount:null,
     converted:false
   });
   saveDB(); closeModal(); render();
   toast('تم تسجيل التلقيح ✅');
+}
+function setGisResult(id, result){
+  const mt = DB.matings.find(x=>x.id===id);
+  mt.gisResult = result;
+  if(result==='negative'){
+    mt.failed = true;
+  } else {
+    mt.failed = false;
+  }
+  saveDB(); openMatingDetail(id);
+  toast(result==='positive' ? 'تم تسجيل نتيجة الجس: إيجابية ✅' : 'تم تسجيل نتيجة الجس: سلبية ❌');
 }
 function deleteMating(id){
   if(!confirm('متأكد إنك عايز تمسح عملية التلقيح دي؟')) return;
@@ -1141,6 +1160,13 @@ function renderMatingDetail(mt){
       <div class="section-title">🌾 الفطام</div>
       <div class="empty" style="padding:16px;">تم تسجيل الفطام (${mt.weanCount||'—'} أرنب بتاريخ ${fmtDate(mt.weanDate)}) وتحولت الدفعة لصفحة "التسمين" ✅</div>
     </div>`;
+  } else if(mt.failed){
+    weanSection = `
+    <div class="section">
+      <div class="section-title">❌ نتيجة الجس</div>
+      <div class="empty" style="padding:16px;color:var(--alert);">الجس طلع سلبي — الأم محتاجة تلقيح جديد.</div>
+      <button class="btn" onclick="openMatingForm('${mt.motherId}','${mt.maleId}')">+ تسجيل تلقيح جديد لنفس الأم والذكر</button>
+    </div>`;
   } else if(mt.actualBirthDate){
     const autoWean = addDays(mt.actualBirthDate, 35);
     weanSection = `
@@ -1156,6 +1182,20 @@ function renderMatingDetail(mt){
       </div>
       <div class="field"><label>وزن الدفعة (اختياري، كجم)</label><input id="f_weanWeight" type="number" step="0.1" placeholder="مثال: 3.5"></div>
       <button class="btn" onclick="completeWeaning('${mt.id}')">تسجيل الفطام وتحويلها للتسمين</button>
+    </div>`;
+  } else if(mt.gisDate){
+    const resultTxt = mt.gisResult==='positive' ? 'إيجابية ✅ (الأم حامل)' : mt.gisResult==='negative' ? 'سلبية ❌' : 'لسه ملحدد';
+    weanSection = `
+    <div class="section">
+      <div class="section-title">🩺 نتيجة الجس</div>
+      <div class="tl-row">
+        <div class="k">نتيجة الجس بتاريخ ${fmtDate(mt.gisDate)}</div>
+        <div class="v ${!mt.gisResult?'empty-val':''}">${resultTxt}</div>
+      </div>
+      <div class="modal-actions" style="justify-content:flex-start;margin-top:10px;">
+        <button class="btn small secondary" onclick="setGisResult('${mt.id}','positive')">✅ إيجابية</button>
+        <button class="btn small danger-outline" onclick="setGisResult('${mt.id}','negative')">❌ سلبية</button>
+      </div>
     </div>`;
   }
 
