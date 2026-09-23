@@ -253,7 +253,7 @@ tr:last-child td{border-bottom:none;}
         </div>
         <div id="topbarActions"></div>
       </div>
-      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">2.4.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
+      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">2.5.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
     </div>
     <div id="content"></div>
   </main>
@@ -271,7 +271,7 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 /* ======================= DATA LAYER ======================= */
-const APP_VERSION = '2.4.0';
+const APP_VERSION = '2.5.0';
 const DB_KEY = 'rabbitFarmDB_v1';
 function loadDB(){
   try{
@@ -1510,8 +1510,8 @@ function renderFattening(){
           ${(momBreed||maleBreed) ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;">${momBreed||'—'} × ${maleBreed||'—'}</div>` : ''}
         </td>
         <td>${f.weanCount||'—'}</td>
-        <td>${remainingTxt} <button class="btn small secondary" onclick="editFatteningSold('${f.id}')">تسجيل بيع</button></td>
-        <td>${f.weight?f.weight+' كجم':'—'} <button class="btn small secondary" onclick="editFatteningWeight('${f.id}')">تعديل</button></td>
+        <td>${remainingTxt} <button class="btn small secondary" style="min-width:78px;" onclick="editFatteningSold('${f.id}')">تسجيل بيع</button></td>
+        <td>${f.weight?f.weight+' كجم':'—'} <button class="btn small secondary" style="min-width:78px;" onclick="editFatteningWeight('${f.id}')">تعديل</button></td>
         <td>${fmtDate(f.weanDate)}</td>
         <td>${f.saleAlertDate?fmtDate(f.saleAlertDate):'—'}${saleNear && remaining>0?' 🔔':''}</td>
         <td><button class="btn small danger-outline" onclick="deleteFattening('${f.id}')">حذف</button></td>
@@ -1535,6 +1535,7 @@ function editFatteningSold(id){
     <h2>تسجيل بيع</h2>
     <p class="sub">العدد الكلي: ${total} — المباع لحد دلوقتي: ${sold} — الباقي: ${total-sold}</p>
     <div class="field"><label>كام اتباع دلوقتي؟ (هيتضاف على المباع)</label><input id="fieldVal" type="number" min="0" placeholder="مثال: 2"></div>
+    <div class="field"><label>المبلغ اللي دخل (ج.م) — اختياري، هيتضاف كإيراد في الحسابات</label><input id="fieldValAmount" type="number" min="0" step="0.01" placeholder="مثال: 400"></div>
     <div class="modal-actions">
       <button class="btn secondary" onclick="closeModal()">إلغاء</button>
       <button class="btn" onclick="saveFatteningSold('${id}')">حفظ</button>
@@ -1544,12 +1545,19 @@ function editFatteningSold(id){
 function saveFatteningSold(id){
   const f = DB.fattening.find(x=>x.id===id);
   const add = parseInt(document.getElementById('fieldVal').value)||0;
+  const amount = document.getElementById('fieldValAmount').value;
   if(add<=0){ toast('اكتب عدد صحيح'); return; }
   const total = parseInt(f.weanCount)||0;
   f.soldCount = (parseInt(f.soldCount)||0) + add;
   if(f.soldCount >= total) f.sold = true;
+  if(amount!=='' && Number(amount)>0){
+    const mom = DB.mothers.find(x=>x.id===f.motherId);
+    const male = DB.males.find(x=>x.id===f.maleId);
+    const label = `بيع تسمين (${add} أرنب) — ${mom?mom.name:'—'} × ${male?male.name:'—'}`;
+    DB.finance.push({id:uid(), item:label, price:Number(amount), date:todayISO(), type:'income'});
+  }
   saveDB(); closeModal(); render();
-  toast('اتسجل البيع ✅');
+  toast('اتسجل البيع ✅' + (amount!=='' && Number(amount)>0 ? ' وضاف إيراد في الحسابات 💰' : ''));
 }
 function editFatteningWeight(id){
   const f = DB.fattening.find(x=>x.id===id);
