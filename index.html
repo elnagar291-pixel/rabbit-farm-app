@@ -253,7 +253,7 @@ tr:last-child td{border-bottom:none;}
         </div>
         <div id="topbarActions"></div>
       </div>
-      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">2.6.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
+      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">2.7.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
     </div>
     <div id="content"></div>
   </main>
@@ -271,7 +271,7 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 /* ======================= DATA LAYER ======================= */
-const APP_VERSION = '2.6.0';
+const APP_VERSION = '2.7.0';
 const DB_KEY = 'rabbitFarmDB_v1';
 function loadDB(){
   try{
@@ -504,11 +504,11 @@ function getUpcomingAlerts(){
           alerts.push({motherId:mt.id, motherName:momName, label:c.label, ico:c.ico, date:val, days:dd, isMating:true});
         }
       });
-      if(mt.expectedBirth){
+      if(mt.expectedBirth && !mt.nestPrepDone){
         const prepDate = addDays(mt.expectedBirth,-5);
         const dd = daysUntil(prepDate);
         if(dd!==null && dd<=3){
-          alerts.push({motherId:mt.id, motherName:momName, label:'جهّز بيت الولادة', ico:'🏠', date:prepDate, days:dd, isMating:true});
+          alerts.push({motherId:mt.id, motherName:momName, label:'جهّز بيت الولادة', ico:'🏠', date:prepDate, days:dd, isMating:true, isNestPrep:true});
         }
       }
     } else {
@@ -629,6 +629,7 @@ function renderDashboard(){
           <div class="date">${fmtDate(a.date)} · ${statusTxt}</div>
           <div class="alert-actions">
           <button class="btn small secondary" onclick="${a.isMale ? `openMaleDetail('${a.motherId}')` : a.isMating ? `openMatingDetail('${a.motherId}')` : a.isFattening ? `currentPage='fattening';render()` : `openMotherDetail('${a.motherId}')`}">فتح السجل</button>
+            ${a.isNestPrep ? `<button class="btn small" style="background:var(--primary);" onclick="markNestPrepped('${a.motherId}')">✅ تم التجهيز</button>` : ''}
             <a class="btn small" style="background:#25D366" href="${waLink(waText)}" target="_blank" rel="noopener">إرسال واتساب</a>
           </div>
         </div>
@@ -1097,6 +1098,13 @@ function saveMating(){
   });
   saveDB(); closeModal(); render();
   toast('تم تسجيل التلقيح ✅');
+}
+function markNestPrepped(id){
+  const mt = DB.matings.find(x=>x.id===id);
+  if(!mt) return;
+  mt.nestPrepDone = true;
+  saveDB(); render();
+  toast('تمام، اتسجل إنك جهّزت بيت الولادة ✅');
 }
 function setGisResult(id, result){
   const mt = DB.matings.find(x=>x.id===id);
