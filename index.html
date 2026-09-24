@@ -253,7 +253,7 @@ tr:last-child td{border-bottom:none;}
         </div>
         <div id="topbarActions"></div>
       </div>
-      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">2.5.1</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
+      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">2.6.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
     </div>
     <div id="content"></div>
   </main>
@@ -271,7 +271,7 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 /* ======================= DATA LAYER ======================= */
-const APP_VERSION = '2.5.1';
+const APP_VERSION = '2.6.0';
 const DB_KEY = 'rabbitFarmDB_v1';
 function loadDB(){
   try{
@@ -496,6 +496,7 @@ function getUpcomingAlerts(){
         {key:'expectedBirth', label:'الميعاد المتوقع للولادة', ico:'🍼'},
       ];
       checks.forEach(c=>{
+        if(c.key==='gisDate' && mt.gisResult) return; // نتيجة الجس اتسجلت خلاص
         const val = mt[c.key];
         if(!val) return;
         const dd = daysUntil(val);
@@ -1189,6 +1190,7 @@ function renderMatingDetail(mt){
     </div>`;
   } else if(mt.gisDate){
     const resultTxt = mt.gisResult==='positive' ? 'إيجابية ✅ (الأم حامل)' : mt.gisResult==='negative' ? 'سلبية ❌' : 'لسه ملحدد';
+    const gisArrived = daysUntil(mt.gisDate) <= 0;
     weanSection = `
     <div class="section">
       <div class="section-title">🩺 نتيجة الجس</div>
@@ -1196,10 +1198,12 @@ function renderMatingDetail(mt){
         <div class="k">نتيجة الجس بتاريخ ${fmtDate(mt.gisDate)}</div>
         <div class="v ${!mt.gisResult?'empty-val':''}">${resultTxt}</div>
       </div>
+      ${gisArrived ? `
       <div class="modal-actions" style="justify-content:flex-start;margin-top:10px;">
         <button class="btn small secondary" onclick="setGisResult('${mt.id}','positive')">✅ إيجابية</button>
         <button class="btn small danger-outline" onclick="setGisResult('${mt.id}','negative')">❌ سلبية</button>
-      </div>
+      </div>` : `
+      <p class="sub" style="margin-top:8px;">هتقدر تسجل نتيجة الجس بعد ما يجي ميعاده (${fmtDate(mt.gisDate)}).</p>`}
     </div>`;
   }
 
