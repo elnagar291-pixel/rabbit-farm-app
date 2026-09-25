@@ -253,7 +253,7 @@ tr:last-child td{border-bottom:none;}
         </div>
         <div id="topbarActions"></div>
       </div>
-      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">2.8.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
+      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">2.9.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
     </div>
     <div id="content"></div>
   </main>
@@ -271,7 +271,7 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 /* ======================= DATA LAYER ======================= */
-const APP_VERSION = '2.8.0';
+const APP_VERSION = '2.9.0';
 const DB_KEY = 'rabbitFarmDB_v1';
 function loadDB(){
   try{
@@ -1156,26 +1156,50 @@ function renderMatingDetail(mt){
   const momPhoto = mom && mom.photo ? `style="background-image:url('${mom.photo}')"` : '';
   const malePhoto = male && male.photo ? `style="background-image:url('${male.photo}')"` : '';
 
-  const rows = [
+  function renderRows(rows){
+    return rows.map(r=>{
+      const val = mt[r.key];
+      const display = r.type==='date' ? fmtDate(val) : (val!==null && val!==undefined && val!=='' ? val : '—');
+      const alertNear = r.type==='date' && val && daysUntil(val)<=3;
+      return `
+      <div class="tl-row">
+        <div class="k">${r.label}</div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="v ${!val?'empty-val':''}">${display}${alertNear?' 🔔':''}</div>
+          ${mt.converted ? '' : `<button class="btn small secondary" onclick="editMatingField('${mt.id}','${r.key}','${r.type}')">تعديل</button>`}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  const earlyRows = renderRows([
     {key:'matingDate', label:'تاريخ التلقيح', type:'date'},
     {key:'gisDate', label:'ميعاد الجس (تلقائي)', type:'date'},
+  ]);
+  const lateRows = renderRows([
     {key:'expectedBirth', label:'الميعاد المتوقع للولادة (تلقائي)', type:'date'},
     {key:'actualBirthDate', label:'تاريخ الولادة الفعلي', type:'date'},
     {key:'birthCount', label:'عدد الأولاد المولودين', type:'number'},
-  ];
-  const timelineHtml = rows.map(r=>{
-    const val = mt[r.key];
-    const display = r.type==='date' ? fmtDate(val) : (val!==null && val!==undefined && val!=='' ? val : '—');
-    const alertNear = r.type==='date' && val && daysUntil(val)<=3;
-    return `
-    <div class="tl-row">
-      <div class="k">${r.label}</div>
-      <div style="display:flex;align-items:center;gap:10px;">
-        <div class="v ${!val?'empty-val':''}">${display}${alertNear?' 🔔':''}</div>
-        ${mt.converted ? '' : `<button class="btn small secondary" onclick="editMatingField('${mt.id}','${r.key}','${r.type}')">تعديل</button>`}
+  ]);
+
+  let gisBlock = '';
+  if(!mt.converted && !mt.failed && !mt.actualBirthDate && mt.gisDate){
+    const resultTxt = mt.gisResult==='positive' ? 'إيجابية ✅ (الأم حامل)' : mt.gisResult==='negative' ? 'سلبية ❌' : 'لسه ملحدد';
+    const gisArrived = daysUntil(mt.gisDate) <= 0;
+    gisBlock = `
+    <div class="tl-row" style="display:block;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div class="k">نتيجة الجس بتاريخ ${fmtDate(mt.gisDate)}</div>
+        <div class="v ${!mt.gisResult?'empty-val':''}">${resultTxt}</div>
       </div>
+      ${gisArrived ? `
+      <div class="modal-actions" style="justify-content:flex-start;margin-top:10px;">
+        <button class="btn small secondary" onclick="setGisResult('${mt.id}','positive')">✅ إيجابية</button>
+        <button class="btn small danger-outline" onclick="setGisResult('${mt.id}','negative')">❌ سلبية</button>
+      </div>` : `
+      <p class="sub" style="margin-top:8px;">هتقدر تسجل نتيجة الجس بعد ما يجي ميعاده (${fmtDate(mt.gisDate)}).</p>`}
     </div>`;
-  }).join('');
+  }
 
   let weanSection = '';
   if(mt.converted){
@@ -1207,23 +1231,6 @@ function renderMatingDetail(mt){
       <div class="field"><label>وزن الدفعة (اختياري، كجم)</label><input id="f_weanWeight" type="number" step="0.1" placeholder="مثال: 3.5"></div>
       <button class="btn" onclick="completeWeaning('${mt.id}')">تسجيل الفطام وتحويلها للتسمين</button>
     </div>`;
-  } else if(mt.gisDate){
-    const resultTxt = mt.gisResult==='positive' ? 'إيجابية ✅ (الأم حامل)' : mt.gisResult==='negative' ? 'سلبية ❌' : 'لسه ملحدد';
-    const gisArrived = daysUntil(mt.gisDate) <= 0;
-    weanSection = `
-    <div class="section">
-      <div class="section-title">🩺 نتيجة الجس</div>
-      <div class="tl-row">
-        <div class="k">نتيجة الجس بتاريخ ${fmtDate(mt.gisDate)}</div>
-        <div class="v ${!mt.gisResult?'empty-val':''}">${resultTxt}</div>
-      </div>
-      ${gisArrived ? `
-      <div class="modal-actions" style="justify-content:flex-start;margin-top:10px;">
-        <button class="btn small secondary" onclick="setGisResult('${mt.id}','positive')">✅ إيجابية</button>
-        <button class="btn small danger-outline" onclick="setGisResult('${mt.id}','negative')">❌ سلبية</button>
-      </div>` : `
-      <p class="sub" style="margin-top:8px;">هتقدر تسجل نتيجة الجس بعد ما يجي ميعاده (${fmtDate(mt.gisDate)}).</p>`}
-    </div>`;
   }
 
   return `
@@ -1242,7 +1249,7 @@ function renderMatingDetail(mt){
 
     <div class="section">
       <div class="section-title">📅 دورة التلقيح</div>
-      <div class="timeline">${timelineHtml}</div>
+      <div class="timeline">${earlyRows}${gisBlock}${lateRows}</div>
     </div>
 
     ${weanSection}
