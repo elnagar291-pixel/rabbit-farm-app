@@ -253,7 +253,7 @@ tr:last-child td{border-bottom:none;}
         </div>
         <div id="topbarActions"></div>
       </div>
-      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">2.7.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
+      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">2.8.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
     </div>
     <div id="content"></div>
   </main>
@@ -271,7 +271,7 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 /* ======================= DATA LAYER ======================= */
-const APP_VERSION = '2.7.0';
+const APP_VERSION = '2.8.0';
 const DB_KEY = 'rabbitFarmDB_v1';
 function loadDB(){
   try{
@@ -551,8 +551,19 @@ function closeModal(){
     hideModalOnly();
   }
 }
-window.addEventListener('popstate', function(){
-  hideModalOnly();
+window.addEventListener('popstate', function(e){
+  const wasModalOpen = document.getElementById('overlay').classList.contains('open');
+  if(wasModalOpen){
+    hideModalOnly();
+    return;
+  }
+  // مفيش نافذة مفتوحة: زرار الرجوع يوديك للرئيسية بدل ما يقفل التطبيق
+  if(currentPage !== 'dashboard'){
+    currentPage = 'dashboard';
+    render();
+    try{ history.pushState({navGuard:true}, ''); }catch(err){}
+  }
+  // لو كنت أصلاً في الرئيسية، سيبها تسيب التطبيق يقفل عادي (دوس رجوع تاني)
 });
 document.getElementById('overlay').addEventListener('click', e=>{
   if(e.target.id==='overlay') closeModal();
@@ -1763,6 +1774,7 @@ setInterval(checkAndPlayAlertSound, 3*60*1000);
 
 /* ======================= INIT ======================= */
 render();
+try{ history.pushState({navGuard:true}, ''); }catch(e){}
 </script>
 
 <script>
