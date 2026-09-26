@@ -262,7 +262,7 @@ tr:last-child td{border-bottom:none;}
         </div>
         <div id="topbarActions"></div>
       </div>
-      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">3.3.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
+      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">3.4.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
     </div>
     <div id="content"></div>
   </main>
@@ -278,7 +278,7 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 /* ======================= DATA LAYER ======================= */
-const APP_VERSION = '3.3.0';
+const APP_VERSION = '3.4.0';
 const DB_KEY = 'rabbitFarmDB_v1';
 function loadDB(){
   try{
@@ -534,6 +534,13 @@ function getUpcomingAlerts(){
       alerts.push({motherId:f.id, motherName:(mom?nameWithBreed(mom):'دفعة')+' - وقت البيع', label:'الدفعة وصلت لعمر البيع (٦٠ يوم)', ico:'💰', date:f.saleAlertDate, days:dd, isFattening:true});
     }
   });
+  DB.vaccinations.forEach(v=>{
+    if(!v.nextDueDate) return;
+    const dd = daysUntil(v.nextDueDate);
+    if(dd!==null && dd<=3){
+      alerts.push({motherId:v.id, motherName:v.rabbitName, label:`ميعاد تطعيم ${v.vaccine}`, ico:'💉', date:v.nextDueDate, days:dd, isVaccine:true});
+    }
+  });
   alerts.sort((a,b)=> a.days-b.days);
   return alerts;
 }
@@ -654,8 +661,9 @@ function renderDashboard(){
           <div><b>${a.motherName}</b> — ${a.label}</div>
           <div class="date">${fmtDate(a.date)} · ${statusTxt}</div>
           <div class="alert-actions">
-          <button class="btn small secondary" onclick="${a.isMale ? `openMaleDetail('${a.motherId}')` : a.isMating ? `openMatingDetail('${a.motherId}')` : a.isFattening ? `currentPage='fattening';render()` : `openMotherDetail('${a.motherId}')`}">فتح السجل</button>
+          <button class="btn small secondary" onclick="${a.isMale ? `openMaleDetail('${a.motherId}')` : a.isMating ? `openMatingDetail('${a.motherId}')` : a.isFattening ? `currentPage='fattening';render()` : a.isVaccine ? `currentPage='vaccinations';render()` : `openMotherDetail('${a.motherId}')`}">فتح السجل</button>
             ${a.isNestPrep ? `<button class="btn small" style="background:var(--primary);" onclick="markNestPrepped('${a.motherId}')">✅ تم التجهيز</button>` : ''}
+            ${a.isVaccine ? `<button class="btn small" style="background:var(--primary);" onclick="markVaccineDone('${a.motherId}')">✅ تم التطعيم</button>` : ''}
           </div>
         </div>
       </div>`;
@@ -1263,7 +1271,10 @@ function renderMatingDetail(mt){
         <div class="field"><label>عدد الفطام</label><input id="f_weanCount" type="number" placeholder="مثال: 5"></div>
         <div class="field"><label>تاريخ الفطام الفعلي</label><input id="f_weanDate" type="date" value="${autoWean}"></div>
       </div>
-      <div class="field"><label>وزن الدفعة (اختياري، كجم)</label><input id="f_weanWeight" type="number" step="0.1" placeholder="مثال: 3.5"></div>
+      <div class="field-row">
+        <div class="field"><label>رقم الخط</label><input id="f_weanLine" inputmode="numeric" pattern="[0-9]*" placeholder="مثال: 3"></div>
+        <div class="field"><label>رقم العين</label><input id="f_weanSlot" inputmode="numeric" pattern="[0-9]*" placeholder="مثال: 7"></div>
+      </div>
       <button class="btn" onclick="completeWeaning('${mt.id}')">تسجيل الفطام وتحويلها للتسمين</button>
     </div>`;
   }
@@ -1322,14 +1333,15 @@ function completeWeaning(matingId){
   const mt = DB.matings.find(x=>x.id===matingId);
   const weanCount = document.getElementById('f_weanCount').value;
   const weanDate = document.getElementById('f_weanDate').value;
-  const weight = document.getElementById('f_weanWeight').value;
+  const line = document.getElementById('f_weanLine').value.trim();
+  const slot = document.getElementById('f_weanSlot').value.trim();
   if(!weanCount || !weanDate){ toast('اكتب عدد الفطام والتاريخ'); return; }
   mt.weanCount = weanCount;
   mt.weanDate = weanDate;
   mt.converted = true;
   DB.fattening.push({
     id: uid(), motherId: mt.motherId, maleId: mt.maleId,
-    weanDate, weanCount, weight: weight||null,
+    weanDate, weanCount, line, slot,
     birthDate: mt.actualBirthDate,
     saleAlertDate: mt.actualBirthDate ? addDays(mt.actualBirthDate,60) : null,
     sourceMatingId: mt.id
@@ -1568,6 +1580,7 @@ function renderFattening(){
       const sold = parseInt(f.soldCount)||0;
       const remaining = total - sold;
       const remainingTxt = total===0 ? '—' : (remaining<=0 ? 'اتباعت بالكامل ✅' : `${remaining} باقي`);
+      const loc = (f.line || f.slot) ? `خط ${f.line||'—'} · عين ${f.slot||'—'}` : '—';
       return `
       <tr>
         <td>
@@ -1576,7 +1589,7 @@ function renderFattening(){
         </td>
         <td>${f.weanCount||'—'}</td>
         <td>${remainingTxt}<br><button class="btn small secondary" style="min-width:92px;white-space:nowrap;margin-top:4px;" onclick="editFatteningSold('${f.id}')">تسجيل بيع</button></td>
-        <td>${f.weight?f.weight+' كجم':'—'}<br><button class="btn small secondary" style="min-width:92px;white-space:nowrap;margin-top:4px;" onclick="editFatteningWeight('${f.id}')">تعديل</button></td>
+        <td>${loc}</td>
         <td>${fmtDate(f.weanDate)}</td>
         <td>${f.saleAlertDate?fmtDate(f.saleAlertDate):'—'}${saleNear && remaining>0?' 🔔':''}</td>
         <td><button class="btn small danger-outline" onclick="deleteFattening('${f.id}')">حذف</button></td>
@@ -1589,7 +1602,7 @@ function renderFattening(){
       </tr>`;
   }).join('');
   return `<div class="table-wrap"><table>
-    <thead><tr><th>الدفعة</th><th>العدد</th><th>الباقي</th><th>الوزن</th><th>تاريخ الفطام</th><th>ميعاد البيع المتوقع</th><th></th></tr></thead>
+    <thead><tr><th>الدفعة</th><th>العدد</th><th>الباقي</th><th>الموقع</th><th>تاريخ الفطام</th><th>ميعاد البيع المتوقع</th><th></th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
 }
 function editFatteningSold(id){
@@ -1672,13 +1685,17 @@ function deleteFattening(id){
 /* ======================= VACCINATIONS ======================= */
 function renderVaccinations(){
   if(DB.vaccinations.length===0) return `<div class="empty">لسه مفيش تطعيمات مسجلة.</div>`;
-  const rows = DB.vaccinations.map(v=>`
+  const rows = DB.vaccinations.map(v=>{
+    const dueNear = v.nextDueDate && daysUntil(v.nextDueDate)<=3;
+    return `
     <tr>
       <td>${v.rabbitName}</td><td>${v.vaccine}</td><td>${fmtDate(v.date)}</td>
+      <td>${v.nextDueDate ? fmtDate(v.nextDueDate)+(dueNear?' 🔔':'') : '—'}${v.nextDueDate ? `<br><button class="btn small" style="background:var(--primary);margin-top:4px;" onclick="markVaccineDone('${v.id}')">✅ تم التطعيم</button>` : ''}</td>
       <td><button class="btn small danger-outline" onclick="deleteVaccine('${v.id}')">حذف</button></td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
   return `<div class="table-wrap"><table>
-    <thead><tr><th>الأرنب</th><th>التطعيم</th><th>التاريخ</th><th></th></tr></thead>
+    <thead><tr><th>الأرنب</th><th>التطعيم</th><th>التاريخ</th><th>الميعاد القادم</th><th></th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
 }
 function openVaccineForm(){
@@ -1689,6 +1706,7 @@ function openVaccineForm(){
       <div class="field"><label>اسم التطعيم</label><input id="f_vvac"></div>
       <div class="field"><label>التاريخ</label><input id="f_vdate" type="date" value="${todayISO()}"></div>
     </div>
+    <div class="field"><label>ميعاد التطعيم القادم (اختياري)</label><input id="f_vnext" type="date"></div>
     <div class="modal-actions">
       <button class="btn secondary" onclick="closeModal()">إلغاء</button>
       <button class="btn" onclick="saveVaccine()">إضافة</button>
@@ -1699,10 +1717,18 @@ function saveVaccine(){
   const rabbitName = document.getElementById('f_vname').value.trim();
   const vaccine = document.getElementById('f_vvac').value.trim();
   const date = document.getElementById('f_vdate').value;
+  const nextDueDate = document.getElementById('f_vnext').value || null;
   if(!rabbitName || !vaccine){ toast('املأ البيانات'); return; }
-  DB.vaccinations.push({id:uid(), rabbitName, vaccine, date});
+  DB.vaccinations.push({id:uid(), rabbitName, vaccine, date, nextDueDate});
   saveDB(); closeModal(); render();
   toast('تم الحفظ ✅');
+}
+function markVaccineDone(id){
+  const v = DB.vaccinations.find(x=>x.id===id);
+  if(!v) return;
+  v.nextDueDate = null;
+  saveDB(); render();
+  toast('تمام، اتسجل إن التطعيم اتعمل ✅');
 }
 function deleteVaccine(id){
   DB.vaccinations = DB.vaccinations.filter(x=>x.id!==id);
