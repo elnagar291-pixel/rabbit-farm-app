@@ -262,7 +262,7 @@ tr:last-child td{border-bottom:none;}
         </div>
         <div id="topbarActions"></div>
       </div>
-      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">3.1.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
+      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">3.2.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
     </div>
     <div id="content"></div>
   </main>
@@ -278,7 +278,7 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 /* ======================= DATA LAYER ======================= */
-const APP_VERSION = '3.1.0';
+const APP_VERSION = '3.2.0';
 const DB_KEY = 'rabbitFarmDB_v1';
 function loadDB(){
   try{
@@ -492,24 +492,26 @@ function getUpcomingAlerts(){
       return;
     }
     if(!mt.actualBirthDate){
-      const checks = [
-        {key:'gisDate', label:'ميعاد الجس', ico:'🩺'},
-        {key:'expectedBirth', label:'الميعاد المتوقع للولادة', ico:'🍼'},
-      ];
-      checks.forEach(c=>{
-        if(c.key==='gisDate' && mt.gisResult) return; // نتيجة الجس اتسجلت خلاص
-        const val = mt[c.key];
-        if(!val) return;
-        const dd = daysUntil(val);
+      // الخطوة ١: تنبيه ميعاد الجس (لحد ما تتسجل نتيجته)
+      if(!mt.gisResult && mt.gisDate){
+        const dd = daysUntil(mt.gisDate);
         if(dd!==null && dd<=3){
-          alerts.push({motherId:mt.id, motherName:momName, label:c.label, ico:c.ico, date:val, days:dd, isMating:true});
+          alerts.push({motherId:mt.id, motherName:momName, label:'ميعاد الجس', ico:'🩺', date:mt.gisDate, days:dd, isMating:true});
         }
-      });
-      if(mt.expectedBirth && !mt.nestPrepDone){
+      }
+      // الخطوة ٢: تنبيه تجهيز بيت الولادة (بعد ما الجس يبقى إيجابي بس)
+      else if(mt.gisResult==='positive' && !mt.nestPrepDone && mt.expectedBirth){
         const prepDate = addDays(mt.expectedBirth,-5);
         const dd = daysUntil(prepDate);
         if(dd!==null && dd<=3){
           alerts.push({motherId:mt.id, motherName:momName, label:'جهّز بيت الولادة', ico:'🏠', date:prepDate, days:dd, isMating:true, isNestPrep:true});
+        }
+      }
+      // الخطوة ٣: تنبيه الميعاد المتوقع للولادة (بعد ما تجهّز بيت الولادة)
+      else if(mt.gisResult==='positive' && mt.nestPrepDone && mt.expectedBirth){
+        const dd = daysUntil(mt.expectedBirth);
+        if(dd!==null && dd<=3){
+          alerts.push({motherId:mt.id, motherName:momName, label:'الميعاد المتوقع للولادة', ico:'🍼', date:mt.expectedBirth, days:dd, isMating:true});
         }
       }
     } else {
@@ -641,7 +643,6 @@ function renderDashboard(){
   } else {
     alertsHtml = alerts.map(a=>{
       const statusTxt = a.days<0 ? `متأخر ${Math.abs(a.days)} يوم` : a.days===0 ? 'النهاردة' : `بعد ${a.days} يوم`;
-      const waText = `تنبيه مزرعة: ${a.label} للأم "${a.motherName}" — بتاريخ ${fmtDate(a.date)} (${statusTxt})`;
       return `
       <div class="alert-item">
         <div class="ico">${a.ico}</div>
@@ -651,7 +652,6 @@ function renderDashboard(){
           <div class="alert-actions">
           <button class="btn small secondary" onclick="${a.isMale ? `openMaleDetail('${a.motherId}')` : a.isMating ? `openMatingDetail('${a.motherId}')` : a.isFattening ? `currentPage='fattening';render()` : `openMotherDetail('${a.motherId}')`}">فتح السجل</button>
             ${a.isNestPrep ? `<button class="btn small" style="background:var(--primary);" onclick="markNestPrepped('${a.motherId}')">✅ تم التجهيز</button>` : ''}
-            <a class="btn small" style="background:#25D366" href="${waLink(waText)}" target="_blank" rel="noopener">إرسال واتساب</a>
           </div>
         </div>
       </div>`;
