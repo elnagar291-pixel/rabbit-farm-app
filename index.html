@@ -83,9 +83,18 @@ main{flex:1;padding:26px 30px 60px;max-width:100%;overflow-x:hidden;}
 .btn.danger-outline{background:#fff;color:var(--danger);border:1.5px solid #EAD1CE;}
 .btn.danger-outline:hover{background:#FBEFEE;}
 .btn.small{padding:6px 12px;font-size:13px;}
+.btn.icon-btn{padding:10px 14px;font-size:17px;line-height:1;}
 
 /* ===== Cards / grid ===== */
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;margin-bottom:8px;}
+.app-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:8px;}
+.app-tile{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px 8px 14px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;transition:transform .1s, box-shadow .15s;}
+.app-tile:hover{box-shadow:0 6px 18px rgba(46,125,91,.14);}
+.app-tile:active{transform:scale(.96);}
+.app-tile-ico{font-size:30px;}
+.app-tile-lbl{font-size:12.5px;font-weight:800;color:var(--ink);}
+.app-tile-count{position:absolute;top:8px;left:8px;background:var(--alert);color:#fff;font-size:11px;font-weight:800;border-radius:20px;min-width:20px;height:20px;line-height:20px;text-align:center;padding:0 5px;}
+@media (max-width:400px){ .app-grid{grid-template-columns:repeat(3,1fr);gap:10px;} .app-tile{padding:16px 6px 12px;} .app-tile-ico{font-size:26px;} .app-tile-lbl{font-size:11.5px;} }
 .stat-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;}
 .stat-card .num{font-size:26px;font-weight:800;color:var(--primary-dark);}
 .stat-card .lbl{font-size:13px;color:var(--muted);margin-top:2px;}
@@ -201,8 +210,8 @@ tr:last-child td{border-bottom:none;}
 
 @media (max-width:760px){
   .sidebar{display:none;}
-  .bottom-nav{display:block;}
-  main{padding:16px 14px calc(96px + env(safe-area-inset-bottom,0px));}
+  .bottom-nav{display:none !important;}
+  main{padding:16px 14px calc(20px + env(safe-area-inset-bottom,0px));}
   .field-row{grid-template-columns:1fr;}
   .topbar{background:var(--bg);}
 }
@@ -253,15 +262,13 @@ tr:last-child td{border-bottom:none;}
         </div>
         <div id="topbarActions"></div>
       </div>
-      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">3.0.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
+      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">3.1.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
     </div>
     <div id="content"></div>
   </main>
 </div>
 
-<nav class="bottom-nav" id="bottomNav">
-  <div class="bottom-nav-inner" id="bottomNavInner"></div>
-</nav>
+
 
 <div class="overlay" id="overlay">
   <div class="modal" id="modalBody"></div>
@@ -271,7 +278,7 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 /* ======================= DATA LAYER ======================= */
-const APP_VERSION = '3.0.0';
+const APP_VERSION = '3.1.0';
 const DB_KEY = 'rabbitFarmDB_v1';
 function loadDB(){
   try{
@@ -438,19 +445,6 @@ function renderNav(){
 function openSidebar(){}
 function closeSidebar(){}
 
-function renderBottomNav(){
-  const wrap = document.getElementById('bottomNavInner');
-  wrap.innerHTML = '';
-  PAGES.forEach(p=>{
-    const btn = document.createElement('button');
-    btn.className = 'bn-item' + (p.id===currentPage?' active':'');
-    const badge = (p.id==='dashboard') ? getUpcomingAlerts().length : 0;
-    btn.innerHTML = `<span class="ico">${p.ico}</span><span>${p.label}</span>` + (badge>0?`<span class="nav-badge" style="margin-right:0;">${badge}</span>`:'');
-    btn.onclick = ()=>{ currentPage = p.id; render(); window.scrollTo(0,0); };
-    wrap.appendChild(btn);
-  });
-}
-
 /* ======================= ALERTS ENGINE ======================= */
 // يبني قائمة تنبيهات من كل أم بناءً على مواعيدها القادمة (خلال 3 أيام قادمة أو متأخرة)
 function getUpcomingAlerts(){
@@ -579,7 +573,6 @@ document.getElementById('overlay').addEventListener('click', e=>{
 /* ======================= RENDER ROOT ======================= */
 function render(){
   renderNav();
-  renderBottomNav();
   const meta = PAGES.find(p=>p.id===currentPage);
   document.getElementById('pageTitle').textContent = meta.label;
   const subs = {
@@ -596,19 +589,19 @@ function render(){
   const actions = document.getElementById('topbarActions');
   actions.innerHTML = '';
   if(currentPage==='mothers'){
-    actions.innerHTML = `<button class="btn" onclick="openMotherForm()">+ إضافة أم جديدة</button>`;
+    actions.innerHTML = `<button class="btn secondary icon-btn" onclick="currentPage='dashboard';render()" title="الرئيسية">🏠</button><button class="btn" onclick="openMotherForm()">+ إضافة أم جديدة</button>`;
   } else if(currentPage==='dashboard'){
-    actions.innerHTML = `<button class="btn secondary" onclick="openSettings()">⚙️ الإعدادات</button>`;
+    actions.innerHTML = `<button class="btn secondary icon-btn" onclick="openSettings()" title="الإعدادات">⚙️</button>`;
   } else if(currentPage==='matings'){
-    actions.innerHTML = `<button class="btn" onclick="openMatingForm()">+ تسجيل تلقيح جديد</button>`;
+    actions.innerHTML = `<button class="btn secondary icon-btn" onclick="currentPage='dashboard';render()" title="الرئيسية">🏠</button><button class="btn" onclick="openMatingForm()">+ تسجيل تلقيح جديد</button>`;
   } else if(currentPage==='males'){
-    actions.innerHTML = `<button class="btn" onclick="openMaleForm()">+ إضافة ذكر</button>`;
+    actions.innerHTML = `<button class="btn secondary icon-btn" onclick="currentPage='dashboard';render()" title="الرئيسية">🏠</button><button class="btn" onclick="openMaleForm()">+ إضافة ذكر</button>`;
   } else if(currentPage==='fattening'){
-    actions.innerHTML = `<button class="btn" onclick="openFatteningForm()">+ دفعة تسمين</button>`;
+    actions.innerHTML = `<button class="btn secondary icon-btn" onclick="currentPage='dashboard';render()" title="الرئيسية">🏠</button><button class="btn" onclick="openFatteningForm()">+ دفعة تسمين</button>`;
   } else if(currentPage==='vaccinations'){
-    actions.innerHTML = `<button class="btn" onclick="openVaccineForm()">+ تطعيم جديد</button>`;
+    actions.innerHTML = `<button class="btn secondary icon-btn" onclick="currentPage='dashboard';render()" title="الرئيسية">🏠</button><button class="btn" onclick="openVaccineForm()">+ تطعيم جديد</button>`;
   } else if(currentPage==='finance'){
-    actions.innerHTML = `<button class="btn" onclick="openFinanceForm()">+ قيد جديد</button>`;
+    actions.innerHTML = `<button class="btn secondary icon-btn" onclick="currentPage='dashboard';render()" title="الرئيسية">🏠</button><button class="btn" onclick="openFinanceForm()">+ قيد جديد</button>`;
   }
 
   const c = document.getElementById('content');
@@ -624,12 +617,22 @@ function render(){
 /* ======================= DASHBOARD ======================= */
 function renderDashboard(){
   const alerts = getUpcomingAlerts();
-  const stats = `
-    <div class="grid">
-      <div class="stat-card"><div class="num">${DB.mothers.length}</div><div class="lbl">إجمالي الأمهات</div></div>
-      <div class="stat-card"><div class="num">${DB.males.length}</div><div class="lbl">إجمالي الذكور</div></div>
-      <div class="stat-card"><div class="num">${new Set(DB.matings.filter(mt=>!mt.converted && !mt.failed && mt.matingDate && !mt.actualBirthDate).map(mt=>mt.motherId)).size}</div><div class="lbl">حوامل حاليًا</div></div>
-      <div class="stat-card"><div class="num">${alerts.length}</div><div class="lbl">تنبيهات قريبة</div></div>
+  const tiles = [
+    {page:'mothers', ico:'🐰', label:'الأمهات', count: DB.mothers.length},
+    {page:'males', ico:'♂️', label:'الذكور', count: DB.males.length},
+    {page:'matings', ico:'❤️', label:'التلقيح', count: DB.matings.filter(mt=>!mt.converted && !mt.failed).length},
+    {page:'fattening', ico:'📈', label:'التسمين', count: DB.fattening.length},
+    {page:'vaccinations', ico:'💉', label:'التطعيمات', count: DB.vaccinations.length},
+    {page:'finance', ico:'💰', label:'حسابات', count: DB.finance.length},
+  ];
+  const grid = `
+    <div class="app-grid">
+      ${tiles.map(t=>`
+      <div class="app-tile" onclick="currentPage='${t.page}';render()">
+        ${t.count>0 ? `<div class="app-tile-count">${t.count}</div>` : ''}
+        <div class="app-tile-ico">${t.ico}</div>
+        <div class="app-tile-lbl">${t.label}</div>
+      </div>`).join('')}
     </div>`;
 
   let alertsHtml = '';
@@ -656,7 +659,7 @@ function renderDashboard(){
   }
 
   return `
-    ${stats}
+    ${grid}
     <div class="section">
       <div class="section-title">🔔 التنبيهات القادمة (خلال ٣ أيام أو متأخرة)</div>
       ${alertsHtml}
