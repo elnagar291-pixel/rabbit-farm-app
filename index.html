@@ -262,7 +262,7 @@ tr:last-child td{border-bottom:none;}
         </div>
         <div id="topbarActions"></div>
       </div>
-      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">3.2.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
+      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">3.3.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
     </div>
     <div id="content"></div>
   </main>
@@ -278,7 +278,7 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 /* ======================= DATA LAYER ======================= */
-const APP_VERSION = '3.2.0';
+const APP_VERSION = '3.3.0';
 const DB_KEY = 'rabbitFarmDB_v1';
 function loadDB(){
   try{
@@ -447,6 +447,10 @@ function closeSidebar(){}
 
 /* ======================= ALERTS ENGINE ======================= */
 // يبني قائمة تنبيهات من كل أم بناءً على مواعيدها القادمة (خلال 3 أيام قادمة أو متأخرة)
+function nameWithBreed(obj){
+  if(!obj) return null;
+  return obj.name + (obj.breed && obj.breed!=='غير محدد' ? ' - '+obj.breed : '');
+}
 function getUpcomingAlerts(){
   const alerts = [];
   DB.mothers.forEach(m=>{
@@ -463,14 +467,14 @@ function getUpcomingAlerts(){
       const dd = daysUntil(val);
       if(dd!==null && dd<=3){ // متأخر أو خلال 3 أيام
         const label = (c.key==='nextTreatmentDate' && m.nextTreatmentName) ? `${c.label}: ${m.nextTreatmentName}` : c.label;
-        alerts.push({motherId:m.id, motherName:m.name, label, ico:c.ico, date:val, days:dd});
+        alerts.push({motherId:m.id, motherName:nameWithBreed(m), label, ico:c.ico, date:val, days:dd});
       }
     });
     if(m.expectedBirth){
       const prepDate = addDays(m.expectedBirth, -5);
       const dd = daysUntil(prepDate);
       if(dd!==null && dd<=3){
-        alerts.push({motherId:m.id, motherName:m.name, label:'جهّز بيت الولادة', ico:'🏠', date:prepDate, days:dd});
+        alerts.push({motherId:m.id, motherName:nameWithBreed(m), label:'جهّز بيت الولادة', ico:'🏠', date:prepDate, days:dd});
       }
     }
   });
@@ -479,14 +483,14 @@ function getUpcomingAlerts(){
       const dd = daysUntil(mm.nextTreatmentDate);
       if(dd!==null && dd<=3){
         const label = mm.nextTreatmentName ? `ميعاد العلاج القادم: ${mm.nextTreatmentName}` : 'ميعاد العلاج القادم';
-        alerts.push({motherId:mm.id, motherName:mm.name+' (ذكر)', label, ico:'💊', date:mm.nextTreatmentDate, days:dd, isMale:true});
+        alerts.push({motherId:mm.id, motherName:nameWithBreed(mm)+' (ذكر)', label, ico:'💊', date:mm.nextTreatmentDate, days:dd, isMale:true});
       }
     }
   });
   DB.matings.forEach(mt=>{
     if(mt.converted) return;
     const mom = DB.mothers.find(x=>x.id===mt.motherId);
-    const momName = mom ? mom.name : 'أم';
+    const momName = mom ? nameWithBreed(mom) : 'أم';
     if(mt.failed){
       alerts.push({motherId:mt.id, motherName:momName, label:'الجس سلبي - محتاج تلقيح جديد', ico:'❌', date:mt.gisDate, days:-999, isMating:true});
       return;
@@ -527,7 +531,7 @@ function getUpcomingAlerts(){
     const dd = daysUntil(f.saleAlertDate);
     if(dd!==null && dd<=3){
       const mom = DB.mothers.find(x=>x.id===f.motherId);
-      alerts.push({motherId:f.id, motherName:(mom?mom.name:'دفعة')+' - وقت البيع', label:'الدفعة وصلت لعمر البيع (٦٠ يوم)', ico:'💰', date:f.saleAlertDate, days:dd, isFattening:true});
+      alerts.push({motherId:f.id, motherName:(mom?nameWithBreed(mom):'دفعة')+' - وقت البيع', label:'الدفعة وصلت لعمر البيع (٦٠ يوم)', ico:'💰', date:f.saleAlertDate, days:dd, isFattening:true});
     }
   });
   alerts.sort((a,b)=> a.days-b.days);
@@ -1124,7 +1128,12 @@ function markNestPrepped(id){
   const mt = DB.matings.find(x=>x.id===id);
   if(!mt) return;
   mt.nestPrepDone = true;
-  saveDB(); render();
+  saveDB();
+  if(currentPage==='matings' && document.getElementById('pageSub') && document.getElementById('pageSub').textContent==='تفاصيل عملية التلقيح'){
+    openMatingDetail(id);
+  } else {
+    render();
+  }
   toast('تمام، اتسجل إنك جهّزت بيت الولادة ✅');
 }
 function setGisResult(id, result){
@@ -1211,6 +1220,22 @@ function renderMatingDetail(mt){
     </div>`;
   }
 
+  let nestPrepBlock = '';
+  if(!mt.converted && !mt.failed && !mt.actualBirthDate && mt.gisResult==='positive' && mt.expectedBirth){
+    const prepDate = addDays(mt.expectedBirth,-5);
+    nestPrepBlock = `
+    <div class="tl-row" style="display:block;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div class="k">تجهيز بيت الولادة (قبل الميعاد بـ٥ أيام: ${fmtDate(prepDate)})</div>
+        <div class="v ${!mt.nestPrepDone?'empty-val':''}">${mt.nestPrepDone ? 'تم التجهيز ✅' : 'لسه ملحدد'}</div>
+      </div>
+      ${!mt.nestPrepDone ? `
+      <div class="modal-actions" style="justify-content:flex-start;margin-top:10px;">
+        <button class="btn small" style="background:var(--primary);" onclick="markNestPrepped('${mt.id}')">✅ تم التجهيز</button>
+      </div>` : ''}
+    </div>`;
+  }
+
   let weanSection = '';
   if(mt.converted){
     weanSection = `
@@ -1259,7 +1284,7 @@ function renderMatingDetail(mt){
 
     <div class="section">
       <div class="section-title">📅 دورة التلقيح</div>
-      <div class="timeline">${earlyRows}${gisBlock}${lateRows}</div>
+      <div class="timeline">${earlyRows}${gisBlock}${nestPrepBlock}${lateRows}</div>
     </div>
 
     ${weanSection}
