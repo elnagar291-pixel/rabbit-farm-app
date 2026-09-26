@@ -253,7 +253,7 @@ tr:last-child td{border-bottom:none;}
         </div>
         <div id="topbarActions"></div>
       </div>
-      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">2.9.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
+      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">3.0.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
     </div>
     <div id="content"></div>
   </main>
@@ -271,7 +271,7 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 /* ======================= DATA LAYER ======================= */
-const APP_VERSION = '2.9.0';
+const APP_VERSION = '3.0.0';
 const DB_KEY = 'rabbitFarmDB_v1';
 function loadDB(){
   try{
@@ -336,6 +336,8 @@ function toast(msg){
   setTimeout(()=>el.remove(),2600);
 }
 function openSettings(){
+  const notifStatus = ('Notification' in window) ? Notification.permission : 'unsupported';
+  const notifLabel = notifStatus==='granted' ? 'مفعّلة ✅' : notifStatus==='denied' ? 'مرفوضة من إعدادات الموبايل' : notifStatus==='unsupported' ? 'مش مدعومة في المتصفح ده' : 'مش مفعّلة';
   openModal(`
     <h2>⚙️ الإعدادات</h2>
     <div class="field">
@@ -348,6 +350,11 @@ function openSettings(){
       <button class="btn" onclick="saveSettings()">حفظ</button>
     </div>
     <div style="margin-top:26px;padding-top:18px;border-top:1px solid var(--line);">
+      <p class="sub" style="margin-bottom:10px;">إشعارات النظام: الحالة الآن — <b>${notifLabel}</b></p>
+      <button class="btn secondary" onclick="requestNotificationPermission()">🔔 تفعيل إشعارات النظام</button>
+      <p class="sub" style="margin-top:8px;">لما تفعّلها، أي تنبيه جديد هيظهرلك كإشعار حقيقي في شريط إشعارات الموبايل، طول ما التطبيق فاتح (حتى لو في الخلفية).</p>
+    </div>
+    <div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--line);">
       <p class="sub" style="margin-bottom:10px;">مسح كل البيانات (الأمهات، الذكور، التلقيح، التسمين...) — لا يمكن التراجع عنه.</p>
       <button class="btn danger-outline" onclick="resetAllData()">🗑️ مسح كل البيانات</button>
     </div>
@@ -1764,6 +1771,30 @@ function unlockAudioOnce(){ _audioUnlocked = true; }
 ['click','touchstart'].forEach(evt=>{
   document.addEventListener(evt, unlockAudioOnce, {once:true});
 });
+function requestNotificationPermission(){
+  if(!('Notification' in window)){ toast('المتصفح ده مش بيدعم إشعارات النظام'); return; }
+  if(Notification.permission === 'granted'){ toast('الإشعارات مفعّلة بالفعل ✅'); return; }
+  Notification.requestPermission().then(perm=>{
+    if(perm==='granted') toast('تم تفعيل إشعارات النظام ✅');
+    else toast('تم رفض إذن الإشعارات');
+  });
+}
+function showSystemNotification(alerts){
+  if(!('Notification' in window) || Notification.permission!=='granted') return;
+  const title = 'خير الطبيعة 🐇';
+  const body = alerts.length===1
+    ? `${alerts[0].motherName} — ${alerts[0].label}`
+    : `فيه ${alerts.length} تنبيهات محتاجة متابعة`;
+  try{
+    if(navigator.serviceWorker && navigator.serviceWorker.ready){
+      navigator.serviceWorker.ready.then(reg=>{
+        reg.showNotification(title, {body, icon:'./icon-192.png', badge:'./icon-192.png', tag:'khair-alerts', renotify:true});
+      }).catch(()=>{});
+    } else {
+      new Notification(title, {body, icon:'./icon-192.png'});
+    }
+  }catch(e){}
+}
 function checkAndPlayAlertSound(){
   if(!_audioUnlocked) return;
   const alerts = getUpcomingAlerts();
@@ -1772,6 +1803,7 @@ function checkAndPlayAlertSound(){
   try{ lastSig = localStorage.getItem('lastAlertSig'); }catch(e){}
   if(alerts.length > 0 && sig !== lastSig){
     playAlertSound();
+    showSystemNotification(alerts);
   }
   try{ localStorage.setItem('lastAlertSig', sig); }catch(e){}
 }
