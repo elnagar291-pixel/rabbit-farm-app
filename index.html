@@ -262,7 +262,7 @@ tr:last-child td{border-bottom:none;}
         </div>
         <div id="topbarActions"></div>
       </div>
-      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">3.4.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
+      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">3.5.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
     </div>
     <div id="content"></div>
   </main>
@@ -278,7 +278,7 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 /* ======================= DATA LAYER ======================= */
-const APP_VERSION = '3.4.0';
+const APP_VERSION = '3.5.0';
 const DB_KEY = 'rabbitFarmDB_v1';
 function loadDB(){
   try{
@@ -425,7 +425,6 @@ const PAGES = [
   {id:'males', label:'الذكور', ico:'♂️'},
   {id:'matings', label:'التلقيح', ico:'❤️'},
   {id:'fattening', label:'التسمين', ico:'📈'},
-  {id:'vaccinations', label:'التطعيمات', ico:'💉'},
   {id:'finance', label:'حسابات', ico:'💰'},
 ];
 let currentPage = 'dashboard';
@@ -534,13 +533,6 @@ function getUpcomingAlerts(){
       alerts.push({motherId:f.id, motherName:(mom?nameWithBreed(mom):'دفعة')+' - وقت البيع', label:'الدفعة وصلت لعمر البيع (٦٠ يوم)', ico:'💰', date:f.saleAlertDate, days:dd, isFattening:true});
     }
   });
-  DB.vaccinations.forEach(v=>{
-    if(!v.nextDueDate) return;
-    const dd = daysUntil(v.nextDueDate);
-    if(dd!==null && dd<=3){
-      alerts.push({motherId:v.id, motherName:v.rabbitName, label:`ميعاد تطعيم ${v.vaccine}`, ico:'💉', date:v.nextDueDate, days:dd, isVaccine:true});
-    }
-  });
   alerts.sort((a,b)=> a.days-b.days);
   return alerts;
 }
@@ -594,7 +586,6 @@ function render(){
     matings:'سجل ومتابعة كل عملية تلقيح: تلقيح، جس، ولادة، فطام',
     males:'المعلومات الأساسية والإحصائيات لكل ذكر',
     fattening:'دفعات التسمين بعد الفطام ومواعيد البيع',
-    vaccinations:'سجل التطعيمات لكل الأرانب',
     finance:'أسعار العلف واللحم والحسابات',
   };
   document.getElementById('pageSub').textContent = subs[currentPage];
@@ -611,8 +602,6 @@ function render(){
     actions.innerHTML = `<button class="btn secondary icon-btn" onclick="currentPage='dashboard';render()" title="الرئيسية">🏠</button><button class="btn" onclick="openMaleForm()">+ إضافة ذكر</button>`;
   } else if(currentPage==='fattening'){
     actions.innerHTML = `<button class="btn secondary icon-btn" onclick="currentPage='dashboard';render()" title="الرئيسية">🏠</button><button class="btn" onclick="openFatteningForm()">+ دفعة تسمين</button>`;
-  } else if(currentPage==='vaccinations'){
-    actions.innerHTML = `<button class="btn secondary icon-btn" onclick="currentPage='dashboard';render()" title="الرئيسية">🏠</button><button class="btn" onclick="openVaccineForm()">+ تطعيم جديد</button>`;
   } else if(currentPage==='finance'){
     actions.innerHTML = `<button class="btn secondary icon-btn" onclick="currentPage='dashboard';render()" title="الرئيسية">🏠</button><button class="btn" onclick="openFinanceForm()">+ قيد جديد</button>`;
   }
@@ -623,7 +612,6 @@ function render(){
   else if(currentPage==='matings') c.innerHTML = renderMatingsList();
   else if(currentPage==='males') c.innerHTML = renderMales();
   else if(currentPage==='fattening') c.innerHTML = renderFattening();
-  else if(currentPage==='vaccinations') c.innerHTML = renderVaccinations();
   else if(currentPage==='finance') c.innerHTML = renderFinance();
 }
 
@@ -635,7 +623,6 @@ function renderDashboard(){
     {page:'males', ico:'♂️', label:'الذكور', count: DB.males.length},
     {page:'matings', ico:'❤️', label:'التلقيح', count: DB.matings.filter(mt=>!mt.converted && !mt.failed).length},
     {page:'fattening', ico:'📈', label:'التسمين', count: DB.fattening.length},
-    {page:'vaccinations', ico:'💉', label:'التطعيمات', count: DB.vaccinations.length},
     {page:'finance', ico:'💰', label:'حسابات', count: DB.finance.length},
   ];
   const grid = `
