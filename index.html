@@ -264,7 +264,7 @@ tr:last-child td{border-bottom:none;}
         </div>
         <div id="topbarActions"></div>
       </div>
-      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">3.7.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
+      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">3.8.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
     </div>
     <div id="content"></div>
   </main>
@@ -280,7 +280,7 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 /* ======================= DATA LAYER ======================= */
-const APP_VERSION = '3.7.0';
+const APP_VERSION = '3.8.0';
 const DB_KEY = 'rabbitFarmDB_v1';
 function loadDB(){
   try{
@@ -1488,6 +1488,12 @@ function renderMaleDetail(x){
   const medsRows = (x.meds||[]).map((med,i)=>`
     <tr><td>${med.name}</td><td>${fmtDate(med.date)}</td><td><button class="btn small danger-outline" onclick="removeMaleMed('${x.id}',${i})">حذف</button></td></tr>`).join('');
 
+  const hisMatings = DB.matings.filter(mt=>mt.maleId===x.id);
+  const matingCount = hisMatings.length;
+  const decided = hisMatings.filter(mt=>mt.gisResult==='positive' || mt.gisResult==='negative');
+  const positiveCount = hisMatings.filter(mt=>mt.gisResult==='positive').length;
+  const successRate = decided.length>0 ? Math.round(positiveCount/decided.length*100) : null;
+
   return `
     <div class="detail-head">
       <div class="detail-photo" ${photo}>${x.photo?'':'♂️'}</div>
@@ -1500,20 +1506,18 @@ function renderMaleDetail(x){
     </div>
 
     <div class="section" style="margin-top:0;">
-      <div class="section-title">📊 إحصائيات التلقيح</div>
+      <div class="section-title">📊 إحصائيات التلقيح (تلقائي)</div>
       <div class="timeline">
         <div class="tl-row">
           <div class="k">عدد مرات التلقيح</div>
           <div style="display:flex;align-items:center;gap:10px;">
-            <div class="v ${!x.matingCount?'empty-val':''}">${x.matingCount!=null && x.matingCount!=='' ? x.matingCount : '—'}</div>
-            <button class="btn small secondary" onclick="editMaleField('${x.id}','matingCount','number')">تعديل</button>
+            <div class="v ${matingCount===0?'empty-val':''}">${matingCount}</div>
           </div>
         </div>
         <div class="tl-row">
           <div class="k">نسبة الإيجابية (%)</div>
           <div style="display:flex;align-items:center;gap:10px;">
-            <div class="v ${!x.successRate?'empty-val':''}">${x.successRate!=null && x.successRate!=='' ? x.successRate+'%' : '—'}</div>
-            <button class="btn small secondary" onclick="editMaleField('${x.id}','successRate','number')">تعديل</button>
+            <div class="v ${successRate===null?'empty-val':''}">${successRate!==null ? successRate+'%' : 'لسه مفيش نتيجة جس محسومة'}</div>
           </div>
         </div>
         <div class="tl-row">
