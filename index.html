@@ -116,6 +116,8 @@ main{flex:1;padding:26px 30px 60px;max-width:100%;overflow-x:hidden;}
 .mother-row-info{flex:1;min-width:0;}
 .mother-row-name{font-weight:800;font-size:19px;}
 .mother-row-meta{font-size:14px;color:var(--muted);margin-top:2px;}
+.loc-group{margin-bottom:6px;}
+.loc-group-title{font-size:12.5px;font-weight:800;color:var(--primary-dark);background:var(--primary-tint);display:inline-block;padding:4px 12px;border-radius:20px;margin:10px 0 8px;}
 .chip{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;margin-top:8px;}
 .chip.ok{background:var(--primary-tint);color:var(--primary-dark);}
 .chip.alert{background:var(--alert-tint);color:var(--alert);}
@@ -262,7 +264,7 @@ tr:last-child td{border-bottom:none;}
         </div>
         <div id="topbarActions"></div>
       </div>
-      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">3.5.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
+      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">3.6.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
     </div>
     <div id="content"></div>
   </main>
@@ -278,7 +280,7 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 /* ======================= DATA LAYER ======================= */
-const APP_VERSION = '3.5.0';
+const APP_VERSION = '3.6.0';
 const DB_KEY = 'rabbitFarmDB_v1';
 function loadDB(){
   try{
@@ -446,6 +448,28 @@ function closeSidebar(){}
 
 /* ======================= ALERTS ENGINE ======================= */
 // يبني قائمة تنبيهات من كل أم بناءً على مواعيدها القادمة (خلال 3 أيام قادمة أو متأخرة)
+function groupByLocation(items){
+  const groups = {};
+  items.forEach(it=>{
+    const key = (it.line !== undefined && it.line !== null && it.line !== '') ? String(it.line) : '__none__';
+    if(!groups[key]) groups[key] = [];
+    groups[key].push(it);
+  });
+  const keys = Object.keys(groups);
+  keys.sort((a,b)=>{
+    if(a==='__none__') return 1;
+    if(b==='__none__') return -1;
+    return (parseInt(a)||0) - (parseInt(b)||0);
+  });
+  return keys.map(k=>({
+    line: k==='__none__' ? null : k,
+    items: groups[k].slice().sort((x,y)=>{
+      const sx = (x.slot!==undefined && x.slot!==null && x.slot!=='') ? parseInt(x.slot) : Infinity;
+      const sy = (y.slot!==undefined && y.slot!==null && y.slot!=='') ? parseInt(y.slot) : Infinity;
+      return sx - sy;
+    })
+  }));
+}
 function nameWithBreed(obj){
   if(!obj) return null;
   return obj.name + (obj.breed && obj.breed!=='غير محدد' ? ' - '+obj.breed : '');
@@ -671,21 +695,26 @@ function renderMothersList(){
   if(DB.mothers.length===0){
     return `<div class="empty">لسه مفيش أمهات مسجلة. دوس "إضافة أم جديدة" عشان تبدأ.</div>`;
   }
-  const rows = DB.mothers.map(m=>{
-    const photo = m.photo ? `style="background-image:url('${m.photo}')"` : '';
-    const breedTxt = (m.breed && m.breed!=='غير محدد') ? m.breed : '';
-    const st = motherStatus(m.id);
-    const loc = (m.line || m.slot) ? `خط ${m.line||'—'} · عين ${m.slot||'—'}` : '';
-    return `
-    <div class="mother-row" onclick="openMotherDetail('${m.id}')">
-      <div class="mother-row-photo" ${photo}>${m.photo?'':'🐇'}</div>
-      <div class="mother-row-info">
-        <div class="mother-row-name">${m.name}${breedTxt?` <span style="font-weight:600;font-size:14px;color:var(--muted);">· ${breedTxt}</span>`:''}</div>
-        <div class="mother-row-meta"><span class="status-chip ${st.cls}">${st.label}</span>${loc?` <span style="color:var(--muted);">· ${loc}</span>`:''}</div>
-      </div>
-    </div>`;
+  const groups = groupByLocation(DB.mothers);
+  const groupsHtml = groups.map(g=>{
+    const rows = g.items.map(m=>{
+      const photo = m.photo ? `style="background-image:url('${m.photo}')"` : '';
+      const breedTxt = (m.breed && m.breed!=='غير محدد') ? m.breed : '';
+      const st = motherStatus(m.id);
+      const loc = (m.line || m.slot) ? `خط ${m.line||'—'} · عين ${m.slot||'—'}` : '';
+      return `
+      <div class="mother-row" onclick="openMotherDetail('${m.id}')">
+        <div class="mother-row-photo" ${photo}>${m.photo?'':'🐇'}</div>
+        <div class="mother-row-info">
+          <div class="mother-row-name">${m.name}${breedTxt?` <span style="font-weight:600;font-size:14px;color:var(--muted);">· ${breedTxt}</span>`:''}</div>
+          <div class="mother-row-meta"><span class="status-chip ${st.cls}">${st.label}</span>${loc?` <span style="color:var(--muted);">· ${loc}</span>`:''}</div>
+        </div>
+      </div>`;
+    }).join('');
+    const header = g.line!==null ? `<div class="loc-group-title">📍 خط ${g.line}</div>` : `<div class="loc-group-title">بدون خط محدد</div>`;
+    return `<div class="loc-group">${header}${rows}</div>`;
   }).join('');
-  return `<div>${rows}</div>`;
+  return `<div>${groupsHtml}</div>`;
 }
 
 function openMotherForm(existing){
@@ -1340,21 +1369,26 @@ function completeWeaning(matingId){
 /* ======================= MALES ======================= */
 function renderMales(){
   if(DB.males.length===0) return `<div class="empty">لسه مفيش ذكور مسجلين.</div>`;
-  const rows = DB.males.map(x=>{
-    const photo = x.photo ? `style="background-image:url('${x.photo}')"` : '';
-    const breedTxt = (x.breed && x.breed!=='غير محدد') ? x.breed : '';
-    const hasAlert = x.nextTreatmentDate && daysUntil(x.nextTreatmentDate)<=3;
-    const loc = (x.line || x.slot) ? `خط ${x.line||'—'} · عين ${x.slot||'—'}` : '';
-    return `
-    <div class="mother-row" onclick="openMaleDetail('${x.id}')">
-      <div class="mother-row-photo" ${photo}>${x.photo?'':'♂️'}</div>
-      <div class="mother-row-info">
-        <div class="mother-row-name">${x.name}${breedTxt?` <span style="font-weight:600;font-size:14px;color:var(--muted);">· ${breedTxt}</span>`:''}</div>
-        <div class="mother-row-meta">${hasAlert ? '🔔 فيه ميعاد علاج قريب' : (loc || 'مافيش مواعيد قريبة')}</div>
-      </div>
-    </div>`;
+  const groups = groupByLocation(DB.males);
+  const groupsHtml = groups.map(g=>{
+    const rows = g.items.map(x=>{
+      const photo = x.photo ? `style="background-image:url('${x.photo}')"` : '';
+      const breedTxt = (x.breed && x.breed!=='غير محدد') ? x.breed : '';
+      const hasAlert = x.nextTreatmentDate && daysUntil(x.nextTreatmentDate)<=3;
+      const loc = (x.line || x.slot) ? `خط ${x.line||'—'} · عين ${x.slot||'—'}` : '';
+      return `
+      <div class="mother-row" onclick="openMaleDetail('${x.id}')">
+        <div class="mother-row-photo" ${photo}>${x.photo?'':'♂️'}</div>
+        <div class="mother-row-info">
+          <div class="mother-row-name">${x.name}${breedTxt?` <span style="font-weight:600;font-size:14px;color:var(--muted);">· ${breedTxt}</span>`:''}</div>
+          <div class="mother-row-meta">${hasAlert ? '🔔 فيه ميعاد علاج قريب' : (loc || 'مافيش مواعيد قريبة')}</div>
+        </div>
+      </div>`;
+    }).join('');
+    const header = g.line!==null ? `<div class="loc-group-title">📍 خط ${g.line}</div>` : `<div class="loc-group-title">بدون خط محدد</div>`;
+    return `<div class="loc-group">${header}${rows}</div>`;
   }).join('');
-  return `<div>${rows}</div>`;
+  return `<div>${groupsHtml}</div>`;
 }
 
 function openMaleForm(existing){
@@ -1555,38 +1589,42 @@ function removeMaleMed(id, idx){
 /* ======================= FATTENING ======================= */
 function renderFattening(){
   if(DB.fattening.length===0) return `<div class="empty">لسه مفيش دفعات تسمين مسجلة.</div>`;
-  const sorted = [...DB.fattening].sort((a,b)=> (b.weanDate||b.startDate||'').localeCompare(a.weanDate||a.startDate||''));
-  const rows = sorted.map(f=>{
-    if(f.motherId){
-      const mom = DB.mothers.find(x=>x.id===f.motherId);
-      const male = DB.males.find(x=>x.id===f.maleId);
-      const saleNear = f.saleAlertDate && daysUntil(f.saleAlertDate)<=3;
-      const momBreed = mom && mom.breed && mom.breed!=='غير محدد' ? mom.breed : '';
-      const maleBreed = male && male.breed && male.breed!=='غير محدد' ? male.breed : '';
-      const total = parseInt(f.weanCount)||0;
-      const sold = parseInt(f.soldCount)||0;
-      const remaining = total - sold;
-      const remainingTxt = total===0 ? '—' : (remaining<=0 ? 'اتباعت بالكامل ✅' : `${remaining} باقي`);
-      const loc = (f.line || f.slot) ? `خط ${f.line||'—'} · عين ${f.slot||'—'}` : '—';
+  const groups = groupByLocation(DB.fattening);
+  const rows = groups.map(g=>{
+    const headerRow = `<tr><td colspan="7" style="background:var(--primary-tint);color:var(--primary-dark);font-weight:800;font-size:12px;">📍 ${g.line!==null ? 'خط '+g.line : 'بدون خط محدد'}</td></tr>`;
+    const itemRows = g.items.map(f=>{
+      if(f.motherId){
+        const mom = DB.mothers.find(x=>x.id===f.motherId);
+        const male = DB.males.find(x=>x.id===f.maleId);
+        const saleNear = f.saleAlertDate && daysUntil(f.saleAlertDate)<=3;
+        const momBreed = mom && mom.breed && mom.breed!=='غير محدد' ? mom.breed : '';
+        const maleBreed = male && male.breed && male.breed!=='غير محدد' ? male.breed : '';
+        const total = parseInt(f.weanCount)||0;
+        const sold = parseInt(f.soldCount)||0;
+        const remaining = total - sold;
+        const remainingTxt = total===0 ? '—' : (remaining<=0 ? 'اتباعت بالكامل ✅' : `${remaining} باقي`);
+        const loc = (f.line || f.slot) ? `خط ${f.line||'—'} · عين ${f.slot||'—'}` : '—';
+        return `
+        <tr>
+          <td>
+            ${mom?mom.name:'—'} × ${male?male.name:'—'}
+            ${(momBreed||maleBreed) ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;">${momBreed||'—'} × ${maleBreed||'—'}</div>` : ''}
+          </td>
+          <td>${f.weanCount||'—'}</td>
+          <td>${remainingTxt}<br><button class="btn small secondary" style="min-width:92px;white-space:nowrap;margin-top:4px;" onclick="editFatteningSold('${f.id}')">تسجيل بيع</button></td>
+          <td>${loc}</td>
+          <td>${fmtDate(f.weanDate)}</td>
+          <td>${f.saleAlertDate?fmtDate(f.saleAlertDate):'—'}${saleNear && remaining>0?' 🔔':''}</td>
+          <td><button class="btn small danger-outline" onclick="deleteFattening('${f.id}')">حذف</button></td>
+        </tr>`;
+      }
       return `
-      <tr>
-        <td>
-          ${mom?mom.name:'—'} × ${male?male.name:'—'}
-          ${(momBreed||maleBreed) ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;">${momBreed||'—'} × ${maleBreed||'—'}</div>` : ''}
-        </td>
-        <td>${f.weanCount||'—'}</td>
-        <td>${remainingTxt}<br><button class="btn small secondary" style="min-width:92px;white-space:nowrap;margin-top:4px;" onclick="editFatteningSold('${f.id}')">تسجيل بيع</button></td>
-        <td>${loc}</td>
-        <td>${fmtDate(f.weanDate)}</td>
-        <td>${f.saleAlertDate?fmtDate(f.saleAlertDate):'—'}${saleNear && remaining>0?' 🔔':''}</td>
-        <td><button class="btn small danger-outline" onclick="deleteFattening('${f.id}')">حذف</button></td>
-      </tr>`;
-    }
-    return `
-      <tr>
-        <td>${f.name}</td><td>${f.count}</td><td>—</td><td>—</td><td>${fmtDate(f.startDate)}</td><td>—</td>
-        <td><button class="btn small danger-outline" onclick="deleteFattening('${f.id}')">حذف</button></td>
-      </tr>`;
+        <tr>
+          <td>${f.name}</td><td>${f.count}</td><td>—</td><td>—</td><td>${fmtDate(f.startDate)}</td><td>—</td>
+          <td><button class="btn small danger-outline" onclick="deleteFattening('${f.id}')">حذف</button></td>
+        </tr>`;
+    }).join('');
+    return headerRow + itemRows;
   }).join('');
   return `<div class="table-wrap"><table>
     <thead><tr><th>الدفعة</th><th>العدد</th><th>الباقي</th><th>الموقع</th><th>تاريخ الفطام</th><th>ميعاد البيع المتوقع</th><th></th></tr></thead>
