@@ -264,7 +264,7 @@ tr:last-child td{border-bottom:none;}
         </div>
         <div id="topbarActions"></div>
       </div>
-      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">3.6.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
+      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">3.7.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
     </div>
     <div id="content"></div>
   </main>
@@ -280,7 +280,7 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 /* ======================= DATA LAYER ======================= */
-const APP_VERSION = '3.6.0';
+const APP_VERSION = '3.7.0';
 const DB_KEY = 'rabbitFarmDB_v1';
 function loadDB(){
   try{
@@ -865,6 +865,7 @@ function renderMotherDetail(m){
       <div style="display:flex;align-items:center;gap:10px;">
         <div class="v ${!val?'empty-val':''}">${display}${nameSuffix}${alertNear?' 🔔':''}</div>
         <button class="btn small secondary" onclick="editMotherField('${m.id}','${r.key}','${r.type}')">تعديل</button>
+        ${val ? `<button class="btn small" style="background:var(--primary);" onclick="completeMotherTreatment('${m.id}')">✅ تم</button>` : ''}
       </div>
     </div>`;
   }).join('');
@@ -1049,6 +1050,16 @@ function saveMotherField(id, key){
   }
   saveDB(); closeModal(); openMotherDetail(id);
   toast('اتحفظ ✅');
+}
+function completeMotherTreatment(id){
+  const m = DB.mothers.find(x=>x.id===id);
+  if(!m || !m.nextTreatmentDate) return;
+  m.meds = m.meds || [];
+  m.meds.push({name: m.nextTreatmentName || 'علاج', date: todayISO()});
+  m.nextTreatmentDate = null;
+  m.nextTreatmentName = null;
+  saveDB(); openMotherDetail(id);
+  toast('تم تسجيل العلاج في السجل ✅');
 }
 function addMed(id){
   const name = document.getElementById('medName').value.trim();
@@ -1510,6 +1521,7 @@ function renderMaleDetail(x){
           <div style="display:flex;align-items:center;gap:10px;">
             <div class="v ${!x.nextTreatmentDate?'empty-val':''}">${treatDisplay}${treatNear?' 🔔':''}</div>
             <button class="btn small secondary" onclick="editMaleTreatment('${x.id}')">تعديل</button>
+            ${x.nextTreatmentDate ? `<button class="btn small" style="background:var(--primary);" onclick="completeMaleTreatment('${x.id}')">✅ تم</button>` : ''}
           </div>
         </div>
       </div>
@@ -1569,6 +1581,16 @@ function saveMaleTreatment(id){
   x.nextTreatmentDate = document.getElementById('fieldVal').value;
   saveDB(); closeModal(); openMaleDetail(id);
   toast('اتحفظ ✅');
+}
+function completeMaleTreatment(id){
+  const x = DB.males.find(y=>y.id===id);
+  if(!x || !x.nextTreatmentDate) return;
+  x.meds = x.meds || [];
+  x.meds.push({name: x.nextTreatmentName || 'علاج', date: todayISO()});
+  x.nextTreatmentDate = null;
+  x.nextTreatmentName = null;
+  saveDB(); openMaleDetail(id);
+  toast('تم تسجيل العلاج في السجل ✅');
 }
 function addMaleMed(id){
   const name = document.getElementById('mMedName').value.trim();
