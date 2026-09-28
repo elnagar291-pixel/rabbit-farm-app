@@ -264,7 +264,7 @@ tr:last-child td{border-bottom:none;}
         </div>
         <div id="topbarActions"></div>
       </div>
-      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">3.9.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
+      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">3.9.1</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
     </div>
     <div id="content"></div>
   </main>
@@ -280,7 +280,7 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 /* ======================= DATA LAYER ======================= */
-const APP_VERSION = '3.9.0';
+const APP_VERSION = '3.9.1';
 const DB_KEY = 'rabbitFarmDB_v1';
 function loadDB(){
   try{
@@ -1110,11 +1110,12 @@ function renderMatingsList(){
     const male = DB.males.find(x=>x.id===mt.maleId);
     const stage = matingStageLabel(mt);
     const photo = mom && mom.photo ? `style="background-image:url('${mom.photo}')"` : '';
+    const momBreed = mom && mom.breed && mom.breed!=='غير محدد' ? mom.breed : '';
     return `
     <div class="mother-row" onclick="openMatingDetail('${mt.id}')">
       <div class="mother-row-photo" ${photo}>${mom && mom.photo ? '' : '🐇'}</div>
       <div class="mother-row-info">
-        <div class="mother-row-name">${mom ? mom.name : 'أم محذوفة'} <span style="font-weight:600;font-size:14px;color:var(--muted);">× ${male ? male.name : 'ذكر محذوف'}</span></div>
+        <div class="mother-row-name">${mom ? mom.name : 'أم محذوفة'}${momBreed ? ` <span style="font-weight:600;font-size:14px;color:var(--muted);">· ${momBreed}</span>` : ''} <span style="font-weight:600;font-size:14px;color:var(--muted);">× ${male ? male.name : 'ذكر محذوف'}</span></div>
         <div class="mother-row-meta">${fmtDate(mt.matingDate)} · <span class="status-chip ${stage.cls}">${stage.label}</span></div>
       </div>
     </div>`;
@@ -1177,8 +1178,7 @@ function markRematingDone(id){
   if(!mt) return;
   mt.remateDone = true;
   saveDB(); render();
-  toast('تمام، التنبيه اتقفل ✅ سجّل التلقيح الجديد لو لسه مسجلتوش');
-  openMatingForm(mt.motherId);
+  toast('تمام، التنبيه اتقفل ✅');
 }
 function markNestPrepped(id){
   const mt = DB.matings.find(x=>x.id===id);
