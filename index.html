@@ -264,7 +264,7 @@ tr:last-child td{border-bottom:none;}
         </div>
         <div id="topbarActions"></div>
       </div>
-      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">3.9.1</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
+      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.0.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
     </div>
     <div id="content"></div>
   </main>
@@ -280,7 +280,7 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 /* ======================= DATA LAYER ======================= */
-const APP_VERSION = '3.9.1';
+const APP_VERSION = '4.0.0';
 const DB_KEY = 'rabbitFarmDB_v1';
 function loadDB(){
   try{
@@ -313,12 +313,23 @@ function fmtDate(d){
   const dt = new Date(d);
   return dt.toLocaleDateString('ar-EG',{day:'numeric',month:'short',year:'numeric'});
 }
+function maleRestText(maleId){
+  const dates = DB.matings.filter(mt=>mt.maleId===maleId && mt.matingDate).map(mt=>mt.matingDate).sort();
+  if(dates.length===0) return null;
+  const last = dates[dates.length-1];
+  const d = -daysUntil(last);
+  return `راحة ${d<0?0:d} يوم`;
+}
 function motherStatus(motherId){
-  const hasLitter = DB.matings.some(mt=>mt.motherId===motherId && !mt.converted && mt.actualBirthDate);
+  const litters = DB.matings
+    .filter(mt=>mt.motherId===motherId && !mt.converted && mt.actualBirthDate)
+    .sort((a,b)=> b.actualBirthDate.localeCompare(a.actualBirthDate));
+  const hasLitter = litters.length>0;
   const hasPending = DB.matings.some(mt=>mt.motherId===motherId && !mt.converted && !mt.failed && mt.matingDate && !mt.actualBirthDate);
-  if(hasLitter && hasPending) return {label:'معاها فطام ومتلقحة', cls:'alert'};
+  const ageTxt = hasLitter ? `عمرهم ${litterAgeDays(litters[0])} يوم` : '';
+  if(hasLitter && hasPending) return {label:`معاها فطام · ${ageTxt} · ومتلقحة`, cls:'alert'};
   if(hasPending) return {label:'ملقحة', cls:'alert'};
-  if(hasLitter) return {label:'معاها فطام', cls:'alert'};
+  if(hasLitter) return {label:`معاها فطام · ${ageTxt}`, cls:'alert'};
   return {label:'فاضية', cls:'ok'};
 }
 function ageString(birthDateStr){
@@ -1408,12 +1419,17 @@ function renderMales(){
       const breedTxt = (x.breed && x.breed!=='غير محدد') ? x.breed : '';
       const hasAlert = x.nextTreatmentDate && daysUntil(x.nextTreatmentDate)<=3;
       const loc = (x.line || x.slot) ? `خط ${x.line||'—'} · عين ${x.slot||'—'}` : '';
+      const rest = maleRestText(x.id);
+      const metaParts = [];
+      if(hasAlert) metaParts.push('🔔 فيه ميعاد علاج قريب');
+      if(loc) metaParts.push(loc);
+      if(rest) metaParts.push(`<b style="color:var(--primary-dark);">${rest}</b>`);
       return `
       <div class="mother-row" onclick="openMaleDetail('${x.id}')">
         <div class="mother-row-photo" ${photo}>${x.photo?'':'♂️'}</div>
         <div class="mother-row-info">
           <div class="mother-row-name">${x.name}${breedTxt?` <span style="font-weight:600;font-size:14px;color:var(--muted);">· ${breedTxt}</span>`:''}</div>
-          <div class="mother-row-meta">${hasAlert ? '🔔 فيه ميعاد علاج قريب' : (loc || 'مافيش مواعيد قريبة')}</div>
+          <div class="mother-row-meta">${metaParts.length ? metaParts.join(' · ') : 'مافيش مواعيد قريبة'}</div>
         </div>
       </div>`;
     }).join('');
