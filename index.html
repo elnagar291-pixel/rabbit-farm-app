@@ -264,7 +264,7 @@ tr:last-child td{border-bottom:none;}
         </div>
         <div id="topbarActions"></div>
       </div>
-      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">3.8.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
+      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">3.9.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
     </div>
     <div id="content"></div>
   </main>
@@ -280,7 +280,7 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 /* ======================= DATA LAYER ======================= */
-const APP_VERSION = '3.8.0';
+const APP_VERSION = '3.9.0';
 const DB_KEY = 'rabbitFarmDB_v1';
 function loadDB(){
   try{
@@ -542,6 +542,13 @@ function getUpcomingAlerts(){
         }
       }
     } else {
+      if(!mt.remateDone){
+        const remateDate = addDays(mt.actualBirthDate,10);
+        const ddR = daysUntil(remateDate);
+        if(ddR!==null && ddR<=3){
+          alerts.push({motherId:mt.id, motherName:momName, label:'ميعاد تلقيح الأم بعد الولادة (١٠ أيام)', ico:'❤️', date:remateDate, days:ddR, isMating:true, isRemate:true});
+        }
+      }
       const weanDate = addDays(mt.actualBirthDate,35);
       const dd = daysUntil(weanDate);
       if(dd!==null && dd<=3){
@@ -674,6 +681,7 @@ function renderDashboard(){
           <div class="alert-actions">
           <button class="btn small secondary" onclick="${a.isMale ? `openMaleDetail('${a.motherId}')` : a.isMating ? `openMatingDetail('${a.motherId}')` : a.isFattening ? `currentPage='fattening';render()` : a.isVaccine ? `currentPage='vaccinations';render()` : `openMotherDetail('${a.motherId}')`}">فتح السجل</button>
             ${a.isNestPrep ? `<button class="btn small" style="background:var(--primary);" onclick="markNestPrepped('${a.motherId}')">✅ تم التجهيز</button>` : ''}
+            ${a.isRemate ? `<button class="btn small" style="background:var(--primary);" onclick="markRematingDone('${a.motherId}')">✅ تم التلقيح</button>` : ''}
             ${a.isVaccine ? `<button class="btn small" style="background:var(--primary);" onclick="markVaccineDone('${a.motherId}')">✅ تم التطعيم</button>` : ''}
           </div>
         </div>
@@ -839,7 +847,7 @@ function renderMotherDetail(m){
     ? `<div class="empty" style="padding:20px;">لسه مفيش تلقيح مسجل لهذه الأم.</div>`
     : myMatings.map(mt=>{
         const male = DB.males.find(x=>x.id===mt.maleId);
-        const stageLabel = mt.converted ? 'اتفطمت وتحولت للتسمين ✅' : (mt.actualBirthDate ? 'معاها فطام - متابعة' : (mt.matingDate ? 'حامل - تحت المتابعة' : ''));
+        const stageLabel = mt.converted ? 'اتفطمت وتحولت للتسمين ✅' : (mt.actualBirthDate ? `معاها فطام · عمرهم ${litterAgeDays(mt)} يوم` : (mt.matingDate ? 'حامل - تحت المتابعة' : ''));
         const avatar = male && male.photo ? `style="background-image:url('${male.photo}')"` : '';
         return `
         <div class="mini-link-row" onclick="openMatingDetail('${mt.id}')">
@@ -1078,10 +1086,15 @@ function removeMed(id, idx){
 }
 
 /* ======================= MATINGS (التلقيح) ======================= */
+function litterAgeDays(mt){
+  if(!mt.actualBirthDate) return null;
+  const d = -daysUntil(mt.actualBirthDate);
+  return d < 0 ? 0 : d;
+}
 function matingStageLabel(mt){
   if(mt.converted) return {label:'اتفطمت وتحولت للتسمين', cls:'ok'};
   if(mt.failed) return {label:'الجس سلبي - محتاج تلقيح جديد', cls:'alert'};
-  if(mt.actualBirthDate) return {label:'معاها فطام - تحت المتابعة', cls:'alert'};
+  if(mt.actualBirthDate) return {label:`معاها فطام · عمرهم ${litterAgeDays(mt)} يوم`, cls:'alert'};
   if(mt.gisResult==='positive') return {label:'الجس إيجابي - حامل مؤكد', cls:'alert'};
   if(mt.matingDate) return {label:'حامل - تحت المتابعة', cls:'alert'};
   return {label:'جديد', cls:'ok'};
@@ -1158,6 +1171,14 @@ function saveMating(){
   });
   saveDB(); closeModal(); render();
   toast('تم تسجيل التلقيح ✅');
+}
+function markRematingDone(id){
+  const mt = DB.matings.find(x=>x.id===id);
+  if(!mt) return;
+  mt.remateDone = true;
+  saveDB(); render();
+  toast('تمام، التنبيه اتقفل ✅ سجّل التلقيح الجديد لو لسه مسجلتوش');
+  openMatingForm(mt.motherId);
 }
 function markNestPrepped(id){
   const mt = DB.matings.find(x=>x.id===id);
