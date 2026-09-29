@@ -114,8 +114,8 @@ main{flex:1;padding:26px 30px 60px;max-width:100%;overflow-x:hidden;}
 .mother-row:hover{box-shadow:0 4px 14px rgba(46,125,91,.12);}
 .mother-row-photo{width:52px;height:52px;border-radius:12px;flex:0 0 52px;background:var(--primary-tint) center/cover no-repeat;display:flex;align-items:center;justify-content:center;color:var(--primary-dark);font-size:22px;}
 .mother-row-info{flex:1;min-width:0;}
-.mother-row-name{font-weight:800;font-size:19px;}
-.mother-row-meta{font-size:14px;color:var(--muted);margin-top:2px;}
+.mother-row-name{font-weight:800;font-size:19px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mother-row-meta{font-size:14px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .loc-group{margin-bottom:6px;}
 .loc-group-title{font-size:12.5px;font-weight:800;color:var(--primary-dark);background:var(--primary-tint);display:inline-block;padding:4px 12px;border-radius:20px;margin:10px 0 8px;}
 .chip{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;margin-top:8px;}
@@ -264,7 +264,7 @@ tr:last-child td{border-bottom:none;}
         </div>
         <div id="topbarActions"></div>
       </div>
-      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.2.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
+      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.3.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
     </div>
     <div id="content"></div>
   </main>
@@ -280,7 +280,7 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 /* ======================= DATA LAYER ======================= */
-const APP_VERSION = '4.2.0';
+const APP_VERSION = '4.3.0';
 const DB_KEY = 'rabbitFarmDB_v1';
 function loadDB(){
   try{
@@ -1127,7 +1127,7 @@ function renderMatingsList(){
       <div class="mother-row-photo" ${photo}>${mom && mom.photo ? '' : '🐇'}</div>
       <div class="mother-row-info">
         <div class="mother-row-name">${mom ? mom.name : 'أم محذوفة'}${momBreed ? ` <span style="font-weight:600;font-size:14px;color:var(--muted);">· ${momBreed}</span>` : ''} <span style="font-weight:600;font-size:14px;color:var(--muted);">× ${male ? male.name : 'ذكر محذوف'}</span></div>
-        <div class="mother-row-meta">${fmtDate(mt.matingDate)} · <span class="status-chip ${stage.cls}">${stage.label}</span></div>
+        <div class="mother-row-meta"><span class="status-chip ${stage.cls}">${stage.label}</span></div>
       </div>
     </div>`;
   }).join('');
