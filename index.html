@@ -264,7 +264,7 @@ tr:last-child td{border-bottom:none;}
         </div>
         <div id="topbarActions"></div>
       </div>
-      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.0.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
+      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.1.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
     </div>
     <div id="content"></div>
   </main>
@@ -280,7 +280,7 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 /* ======================= DATA LAYER ======================= */
-const APP_VERSION = '4.0.0';
+const APP_VERSION = '4.1.0';
 const DB_KEY = 'rabbitFarmDB_v1';
 function loadDB(){
   try{
@@ -1683,7 +1683,7 @@ function renderFattening(){
       }
       return `
         <tr>
-          <td>${f.name}</td><td>${f.count}</td><td>—</td><td>—</td><td>${fmtDate(f.startDate)}</td><td>—</td>
+          <td>${f.name}</td><td>${f.count}</td><td>—</td><td>${(f.line||f.slot)?`خط ${f.line||'—'} · عين ${f.slot||'—'}`:'—'}</td><td>${fmtDate(f.startDate)}</td><td>—</td>
           <td><button class="btn small danger-outline" onclick="deleteFattening('${f.id}')">حذف</button></td>
         </tr>`;
     }).join('');
@@ -1750,6 +1750,10 @@ function openFatteningForm(){
       <div class="field"><label>العدد</label><input id="f_fcount" type="number"></div>
       <div class="field"><label>تاريخ البدء</label><input id="f_fstart" type="date" value="${todayISO()}"></div>
     </div>
+    <div class="field-row">
+      <div class="field"><label>رقم الخط</label><input id="f_fline" inputmode="numeric" pattern="[0-9]*" placeholder="مثال: 3"></div>
+      <div class="field"><label>رقم العين</label><input id="f_fslot" inputmode="numeric" pattern="[0-9]*" placeholder="مثال: 7"></div>
+    </div>
     <div class="modal-actions">
       <button class="btn secondary" onclick="closeModal()">إلغاء</button>
       <button class="btn" onclick="saveFattening()">إضافة</button>
@@ -1760,8 +1764,10 @@ function saveFattening(){
   const name = document.getElementById('f_fname').value.trim();
   const count = document.getElementById('f_fcount').value;
   const startDate = document.getElementById('f_fstart').value;
+  const line = document.getElementById('f_fline').value.trim();
+  const slot = document.getElementById('f_fslot').value.trim();
   if(!name){ toast('اكتب اسم الدفعة'); return; }
-  DB.fattening.push({id:uid(), name, count, startDate});
+  DB.fattening.push({id:uid(), name, count, startDate, line, slot});
   saveDB(); closeModal(); render();
   toast('تم الحفظ ✅');
 }
