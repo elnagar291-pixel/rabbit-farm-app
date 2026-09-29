@@ -264,7 +264,7 @@ tr:last-child td{border-bottom:none;}
         </div>
         <div id="topbarActions"></div>
       </div>
-      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.1.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
+      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.2.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
     </div>
     <div id="content"></div>
   </main>
@@ -280,7 +280,7 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 /* ======================= DATA LAYER ======================= */
-const APP_VERSION = '4.1.0';
+const APP_VERSION = '4.2.0';
 const DB_KEY = 'rabbitFarmDB_v1';
 function loadDB(){
   try{
@@ -1847,47 +1847,53 @@ function renderFinance(){
   const rows = DB.finance.slice().reverse().map(f=>{
     const type = f.type==='income' ? 'income' : f.type==='expense' ? 'expense' : 'unknown';
     const typeText = type==='income' ? 'إيراد' : type==='expense' ? 'مصروف' : 'قديم/غير محدد';
-    return `<tr class="finance-row-${type}">
+    return `<tr class="finance-row-${type}" style="cursor:pointer;" onclick="openFinanceForm('${f.id}')">
       <td>${f.item}</td>
       <td><span class="finance-type ${type}">${typeText}</span></td>
       <td><b>${Number(f.price||0).toLocaleString('ar-EG')} ج.م</b></td>
       <td>${fmtDate(f.date)}</td>
-      <td><button class="btn small danger-outline" onclick="deleteFinance('${f.id}')">حذف</button></td>
+      <td><button class="btn small danger-outline" onclick="event.stopPropagation();deleteFinance('${f.id}')">حذف</button></td>
     </tr>`;
   }).join('');
   return summary + `<div class="table-wrap"><table>
     <thead><tr><th>البند</th><th>النوع</th><th>المبلغ</th><th>التاريخ</th><th></th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
 }
-function openFinanceForm(){
+function openFinanceForm(id){
+  const f = id ? DB.finance.find(x=>x.id===id) : null;
   openModal(`
-    <h2>قيد حسابات جديد</h2>
+    <h2>${f ? 'تعديل القيد' : 'قيد حسابات جديد'}</h2>
     <div class="field"><label>نوع القيد</label>
       <select id="f_type">
-        <option value="expense">💸 مصروفات</option>
-        <option value="income">💰 إيرادات</option>
+        <option value="expense" ${f && f.type==='expense'?'selected':''}>💸 مصروفات</option>
+        <option value="income" ${f && f.type==='income'?'selected':''}>💰 إيرادات</option>
       </select>
     </div>
-    <div class="field"><label>البند</label><input id="f_item" placeholder="مثال: علف / بيع أرنب / دواء"></div>
+    <div class="field"><label>البند</label><input id="f_item" value="${f?f.item:''}" placeholder="مثال: علف / بيع أرنب / دواء"></div>
     <div class="field-row">
-      <div class="field"><label>المبلغ (ج.م)</label><input id="f_price" type="number" min="0" step="0.01"></div>
-      <div class="field"><label>التاريخ</label><input id="f_fdate" type="date" value="${todayISO()}"></div>
+      <div class="field"><label>المبلغ (ج.م)</label><input id="f_price" type="number" min="0" step="0.01" value="${f?f.price:''}"></div>
+      <div class="field"><label>التاريخ</label><input id="f_fdate" type="date" value="${f?f.date:todayISO()}"></div>
     </div>
     <div class="modal-actions">
       <button class="btn secondary" onclick="closeModal()">إلغاء</button>
-      <button class="btn" onclick="saveFinance()">إضافة</button>
+      <button class="btn" onclick="saveFinance('${f?f.id:''}')">${f?'حفظ التعديلات':'إضافة'}</button>
     </div>
   `);
 }
-function saveFinance(){
+function saveFinance(id){
   const type = document.getElementById('f_type').value;
   const item = document.getElementById('f_item').value.trim();
   const price = document.getElementById('f_price').value;
   const date = document.getElementById('f_fdate').value;
   if(!item || price==='' || Number(price)<0){ toast('اكتب البند والمبلغ بشكل صحيح'); return; }
-  DB.finance.push({id:uid(), item, price:Number(price), date, type});
+  if(id){
+    const f = DB.finance.find(x=>x.id===id);
+    f.type=type; f.item=item; f.price=Number(price); f.date=date;
+  } else {
+    DB.finance.push({id:uid(), item, price:Number(price), date, type});
+  }
   saveDB(); closeModal(); render();
-  toast(type==='income' ? 'تم تسجيل الإيراد 💰' : 'تم تسجيل المصروف 💸');
+  toast(id ? 'اتحفظت التعديلات ✅' : (type==='income' ? 'تم تسجيل الإيراد 💰' : 'تم تسجيل المصروف 💸'));
 }
 function deleteFinance(id){
   DB.finance = DB.finance.filter(x=>x.id!==id);
