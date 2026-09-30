@@ -264,7 +264,7 @@ tr:last-child td{border-bottom:none;}
         </div>
         <div id="topbarActions"></div>
       </div>
-      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.3.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
+      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.3.1</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
     </div>
     <div id="content"></div>
   </main>
@@ -280,7 +280,7 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 /* ======================= DATA LAYER ======================= */
-const APP_VERSION = '4.3.0';
+const APP_VERSION = '4.3.1';
 const DB_KEY = 'rabbitFarmDB_v1';
 function loadDB(){
   try{
@@ -1127,7 +1127,7 @@ function renderMatingsList(){
       <div class="mother-row-photo" ${photo}>${mom && mom.photo ? '' : '🐇'}</div>
       <div class="mother-row-info">
         <div class="mother-row-name">${mom ? mom.name : 'أم محذوفة'}${momBreed ? ` <span style="font-weight:600;font-size:14px;color:var(--muted);">· ${momBreed}</span>` : ''} <span style="font-weight:600;font-size:14px;color:var(--muted);">× ${male ? male.name : 'ذكر محذوف'}</span></div>
-        <div class="mother-row-meta"><span class="status-chip ${stage.cls}">${stage.label}</span></div>
+        <div class="mother-row-meta">${fmtDate(mt.matingDate)} · <span class="status-chip ${stage.cls}">${stage.label}</span></div>
       </div>
     </div>`;
   }).join('');
