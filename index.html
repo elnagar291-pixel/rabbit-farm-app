@@ -264,7 +264,7 @@ tr:last-child td{border-bottom:none;}
         </div>
         <div id="topbarActions"></div>
       </div>
-      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.4.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
+      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.5.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
     </div>
     <div id="content"></div>
   </main>
@@ -280,7 +280,7 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 /* ======================= DATA LAYER ======================= */
-const APP_VERSION = '4.4.0';
+const APP_VERSION = '4.5.0';
 const DB_KEY = 'rabbitFarmDB_v1';
 function loadDB(){
   try{
@@ -311,7 +311,8 @@ function daysUntil(dateStr){
 function fmtDate(d){
   if(!d) return '—';
   const dt = new Date(d);
-  return dt.toLocaleDateString('ar-EG',{day:'numeric',month:'short',year:'numeric'});
+  if(isNaN(dt.getTime())) return '—';
+  return `${dt.getDate()}/${dt.getMonth()+1}/${dt.getFullYear()}`;
 }
 function maleRestText(maleId){
   const dates = DB.matings.filter(mt=>mt.maleId===maleId && mt.matingDate).map(mt=>mt.matingDate).sort();
