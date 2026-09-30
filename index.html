@@ -264,7 +264,7 @@ tr:last-child td{border-bottom:none;}
         </div>
         <div id="topbarActions"></div>
       </div>
-      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.5.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
+      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.6.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
     </div>
     <div id="content"></div>
   </main>
@@ -280,7 +280,7 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 /* ======================= DATA LAYER ======================= */
-const APP_VERSION = '4.5.0';
+const APP_VERSION = '4.6.0';
 const DB_KEY = 'rabbitFarmDB_v1';
 function loadDB(){
   try{
@@ -459,7 +459,7 @@ function openSidebar(){}
 function closeSidebar(){}
 
 /* ======================= ALERTS ENGINE ======================= */
-// يبني قائمة تنبيهات من كل أم بناءً على مواعيدها القادمة (خلال 3 أيام قادمة أو متأخرة)
+// يبني قائمة تنبيهات من كل أم بناءً على مواعيدها القادمة (خلال يوم واحد قادمة أو متأخرة)
 function groupByLocation(items){
   const groups = {};
   items.forEach(it=>{
@@ -500,7 +500,7 @@ function getUpcomingAlerts(){
       const val = m[c.key];
       if(!val) return;
       const dd = daysUntil(val);
-      if(dd!==null && dd<=3){ // متأخر أو خلال 3 أيام
+      if(dd!==null && dd<=1){ // متأخر أو خلال يوم واحد
         const label = (c.key==='nextTreatmentDate' && m.nextTreatmentName) ? `${c.label}: ${m.nextTreatmentName}` : c.label;
         alerts.push({motherId:m.id, motherName:nameWithBreed(m), label, ico:c.ico, date:val, days:dd});
       }
@@ -508,7 +508,7 @@ function getUpcomingAlerts(){
     if(m.expectedBirth){
       const prepDate = addDays(m.expectedBirth, -5);
       const dd = daysUntil(prepDate);
-      if(dd!==null && dd<=3){
+      if(dd!==null && dd<=1){
         alerts.push({motherId:m.id, motherName:nameWithBreed(m), label:'جهّز بيت الولادة', ico:'🏠', date:prepDate, days:dd});
       }
     }
@@ -516,7 +516,7 @@ function getUpcomingAlerts(){
   DB.males.forEach(mm=>{
     if(mm.nextTreatmentDate){
       const dd = daysUntil(mm.nextTreatmentDate);
-      if(dd!==null && dd<=3){
+      if(dd!==null && dd<=1){
         const label = mm.nextTreatmentName ? `ميعاد العلاج القادم: ${mm.nextTreatmentName}` : 'ميعاد العلاج القادم';
         alerts.push({motherId:mm.id, motherName:nameWithBreed(mm)+' (ذكر)', label, ico:'💊', date:mm.nextTreatmentDate, days:dd, isMale:true});
       }
@@ -534,7 +534,7 @@ function getUpcomingAlerts(){
       // الخطوة ١: تنبيه ميعاد الجس (لحد ما تتسجل نتيجته)
       if(!mt.gisResult && mt.gisDate){
         const dd = daysUntil(mt.gisDate);
-        if(dd!==null && dd<=3){
+        if(dd!==null && dd<=1){
           alerts.push({motherId:mt.id, motherName:momName, label:'ميعاد الجس', ico:'🩺', date:mt.gisDate, days:dd, isMating:true});
         }
       }
@@ -542,14 +542,14 @@ function getUpcomingAlerts(){
       else if(mt.gisResult==='positive' && !mt.nestPrepDone && mt.expectedBirth){
         const prepDate = addDays(mt.expectedBirth,-5);
         const dd = daysUntil(prepDate);
-        if(dd!==null && dd<=3){
+        if(dd!==null && dd<=1){
           alerts.push({motherId:mt.id, motherName:momName, label:'جهّز بيت الولادة', ico:'🏠', date:prepDate, days:dd, isMating:true, isNestPrep:true});
         }
       }
       // الخطوة ٣: تنبيه الميعاد المتوقع للولادة (بعد ما تجهّز بيت الولادة)
       else if(mt.gisResult==='positive' && mt.nestPrepDone && mt.expectedBirth){
         const dd = daysUntil(mt.expectedBirth);
-        if(dd!==null && dd<=3){
+        if(dd!==null && dd<=1){
           alerts.push({motherId:mt.id, motherName:momName, label:'الميعاد المتوقع للولادة', ico:'🍼', date:mt.expectedBirth, days:dd, isMating:true});
         }
       }
@@ -557,13 +557,13 @@ function getUpcomingAlerts(){
       if(!mt.remateDone){
         const remateDate = addDays(mt.actualBirthDate,10);
         const ddR = daysUntil(remateDate);
-        if(ddR!==null && ddR<=3){
+        if(ddR!==null && ddR<=1){
           alerts.push({motherId:mt.id, motherName:momName, label:'ميعاد تلقيح الأم بعد الولادة (١٠ أيام)', ico:'❤️', date:remateDate, days:ddR, isMating:true, isRemate:true});
         }
       }
       const weanDate = addDays(mt.actualBirthDate,35);
       const dd = daysUntil(weanDate);
-      if(dd!==null && dd<=3){
+      if(dd!==null && dd<=1){
         alerts.push({motherId:mt.id, motherName:momName, label:'ميعاد الفطام', ico:'🌾', date:weanDate, days:dd, isMating:true});
       }
     }
@@ -571,7 +571,7 @@ function getUpcomingAlerts(){
   DB.fattening.forEach(f=>{
     if(!f.saleAlertDate || f.sold) return;
     const dd = daysUntil(f.saleAlertDate);
-    if(dd!==null && dd<=3){
+    if(dd!==null && dd<=1){
       const mom = DB.mothers.find(x=>x.id===f.motherId);
       alerts.push({motherId:f.id, motherName:(mom?nameWithBreed(mom):'دفعة')+' - وقت البيع', label:'الدفعة وصلت لعمر البيع (٦٠ يوم)', ico:'💰', date:f.saleAlertDate, days:dd, isFattening:true});
     }
@@ -704,7 +704,7 @@ function renderDashboard(){
   return `
     ${grid}
     <div class="section">
-      <div class="section-title">🔔 التنبيهات القادمة (خلال ٣ أيام أو متأخرة)</div>
+      <div class="section-title">🔔 التنبيهات القادمة (خلال يوم واحد أو متأخرة)</div>
       ${alertsHtml}
     </div>
   `;
