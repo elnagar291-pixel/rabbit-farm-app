@@ -264,7 +264,7 @@ tr:last-child td{border-bottom:none;}
         </div>
         <div id="topbarActions"></div>
       </div>
-      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.7.1</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
+      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.7.2</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
     </div>
     <div id="content"></div>
   </main>
@@ -280,7 +280,7 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 /* ======================= DATA LAYER ======================= */
-const APP_VERSION = '4.7.1';
+const APP_VERSION = '4.7.2';
 const DB_KEY = 'rabbitFarmDB_v1';
 function loadDB(){
   try{
@@ -573,7 +573,7 @@ function getUpcomingAlerts(){
     const dd = daysUntil(f.saleAlertDate);
     if(dd!==null && dd<=1){
       const mom = DB.mothers.find(x=>x.id===f.motherId);
-      alerts.push({motherId:f.id, motherName:(mom?nameWithBreed(mom):'دفعة')+' - وقت البيع', label:'الدفعة وصلت لعمر البيع (٦٠ يوم)', ico:'💰', date:f.saleAlertDate, days:dd, isFattening:true});
+      alerts.push({motherId:f.id, motherName:(mom?nameWithBreed(mom):(f.name||'دفعة'))+' - وقت البيع', label:'الدفعة وصلت لعمر البيع (٦٠ يوم)', ico:'💰', date:f.saleAlertDate, days:dd, isFattening:true});
     }
   });
   alerts.sort((a,b)=> a.days-b.days);
@@ -1653,42 +1653,49 @@ function removeMaleMed(id, idx){
 }
 
 /* ======================= FATTENING ======================= */
+function fatTotal(f){ return parseInt(f.motherId ? f.weanCount : f.count)||0; }
+function fatLabel(f){
+  if(f.motherId){
+    const mom = DB.mothers.find(x=>x.id===f.motherId);
+    const male = DB.males.find(x=>x.id===f.maleId);
+    return `${mom?mom.name:'—'} × ${male?male.name:'—'}`;
+  }
+  return f.name || 'دفعة';
+}
+function fatSlotTxt(f){
+  if(!(f.line||f.slot)) return '—';
+  const s = f.slot ? (f.slotTo && f.slotTo!==f.slot ? `${f.slot}-${f.slotTo}` : f.slot) : '—';
+  return `خط ${f.line||'—'} · عين ${s}`;
+}
 function renderFattening(){
   if(DB.fattening.length===0) return `<div class="empty">لسه مفيش دفعات تسمين مسجلة.</div>`;
   const groups = groupByLocation(DB.fattening);
   const rows = groups.map(g=>{
     const headerRow = `<tr><td colspan="7" style="background:var(--primary-tint);color:var(--primary-dark);font-weight:800;font-size:12px;">📍 ${g.line!==null ? 'خط '+g.line : 'بدون خط محدد'}</td></tr>`;
     const itemRows = g.items.map(f=>{
+      const total = fatTotal(f);
+      const sold = parseInt(f.soldCount)||0;
+      const remaining = total - sold;
+      const remainingTxt = total===0 ? '—' : (remaining<=0 ? 'اتباعت بالكامل ✅' : `${remaining} باقي`);
+      const saleNear = f.saleAlertDate && daysUntil(f.saleAlertDate)<=3;
+      const soldBtn = `<br><button class="btn small secondary" style="min-width:92px;white-space:nowrap;margin-top:4px;" onclick="editFatteningSold('${f.id}')">تسجيل بيع</button>`;
+      let nameCell = fatLabel(f);
       if(f.motherId){
         const mom = DB.mothers.find(x=>x.id===f.motherId);
         const male = DB.males.find(x=>x.id===f.maleId);
-        const saleNear = f.saleAlertDate && daysUntil(f.saleAlertDate)<=3;
         const momBreed = mom && mom.breed && mom.breed!=='غير محدد' ? mom.breed : '';
         const maleBreed = male && male.breed && male.breed!=='غير محدد' ? male.breed : '';
-        const total = parseInt(f.weanCount)||0;
-        const sold = parseInt(f.soldCount)||0;
-        const remaining = total - sold;
-        const remainingTxt = total===0 ? '—' : (remaining<=0 ? 'اتباعت بالكامل ✅' : `${remaining} باقي`);
-        const slotTxt = f.slot ? (f.slotTo && f.slotTo!==f.slot ? `${f.slot}-${f.slotTo}` : f.slot) : '—';
-        const loc = (f.line || f.slot) ? `خط ${f.line||'—'} · عين ${slotTxt}` : '—';
-        return `
-        <tr>
-          <td>
-            ${mom?mom.name:'—'} × ${male?male.name:'—'}
-            ${(momBreed||maleBreed) ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;">${momBreed||'—'} × ${maleBreed||'—'}</div>` : ''}
-          </td>
-          <td>${f.weanCount||'—'}</td>
-          <td>${remainingTxt}<br><button class="btn small secondary" style="min-width:92px;white-space:nowrap;margin-top:4px;" onclick="editFatteningSold('${f.id}')">تسجيل بيع</button></td>
-          <td>${loc}</td>
-          <td>${fmtDate(f.weanDate)}</td>
-          <td>${f.saleAlertDate?fmtDate(f.saleAlertDate):'—'}${saleNear && remaining>0?' 🔔':''}</td>
-          <td><button class="btn small danger-outline" onclick="deleteFattening('${f.id}')">حذف</button></td>
-        </tr>`;
+        if(momBreed||maleBreed) nameCell += `<div style="font-size:11px;color:var(--muted);margin-top:2px;">${momBreed||'—'} × ${maleBreed||'—'}</div>`;
       }
       return `
         <tr>
-          <td>${f.name}</td><td>${f.count}</td><td>—</td><td>${(f.line||f.slot)?`خط ${f.line||'—'} · عين ${f.slot?(f.slotTo&&f.slotTo!==f.slot?f.slot+'-'+f.slotTo:f.slot):'—'}`:'—'}</td><td>${fmtDate(f.startDate)}</td><td>—</td>
-          <td><button class="btn small danger-outline" onclick="deleteFattening('${f.id}')">حذف</button></td>
+          <td>${nameCell}</td>
+          <td>${total||'—'}</td>
+          <td>${remainingTxt}${soldBtn}</td>
+          <td>${fatSlotTxt(f)}</td>
+          <td>${fmtDate(f.motherId ? f.weanDate : f.startDate)}</td>
+          <td>${f.saleAlertDate?fmtDate(f.saleAlertDate):'—'}${saleNear && remaining>0?' 🔔':''}</td>
+          <td><button class="btn small secondary" style="white-space:nowrap;" onclick="openFatteningEdit('${f.id}')">✏️ تعديل</button></td>
         </tr>`;
     }).join('');
     return headerRow + itemRows;
@@ -1697,9 +1704,84 @@ function renderFattening(){
     <thead><tr><th>الدفعة</th><th>العدد</th><th>الباقي</th><th>الموقع</th><th>تاريخ الفطام</th><th>ميعاد البيع المتوقع</th><th></th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
 }
+/* صفحة تعديل الدفعة: بياناتها + تسجيل البيع + الحذف */
+function openFatteningEdit(id){
+  const f = DB.fattening.find(x=>x.id===id);
+  if(!f) return;
+  const isWean = !!f.motherId;
+  const total = fatTotal(f);
+  const sold = parseInt(f.soldCount)||0;
+  const nameField = isWean
+    ? `<div class="field"><label>الدفعة</label><div style="padding:10px 12px;background:var(--primary-tint);border-radius:10px;font-weight:700;">${fatLabel(f)}</div></div>`
+    : `<div class="field"><label>اسم الدفعة</label><input id="fe_name" value="${(f.name||'').replace(/"/g,'&quot;')}"></div>`;
+  openModal(`
+    <h2>✏️ تعديل الدفعة</h2>
+    <p class="sub">العدد الكلي: ${total} — المباع لحد دلوقتي: ${sold} — الباقي: ${Math.max(total-sold,0)}</p>
+    ${nameField}
+    <div class="field-row">
+      <div class="field"><label>العدد الكلي</label><input id="fe_count" type="number" min="0" value="${total||''}"></div>
+      <div class="field"><label>${isWean?'تاريخ الفطام':'تاريخ البدء'}</label><input id="fe_date" type="date" value="${(isWean?f.weanDate:f.startDate)||''}"></div>
+    </div>
+    <div class="field"><label>ميعاد البيع المتوقع</label><input id="fe_sale" type="date" value="${f.saleAlertDate||''}"></div>
+    <div class="field"><label>رقم الخط</label><input id="fe_line" inputmode="numeric" pattern="[0-9]*" value="${f.line||''}"></div>
+    <div class="field-row">
+      <div class="field"><label>من عين</label><input id="fe_slot" inputmode="numeric" pattern="[0-9]*" value="${f.slot||''}"></div>
+      <div class="field"><label>إلى عين</label><input id="fe_slotTo" inputmode="numeric" pattern="[0-9]*" value="${f.slotTo||''}"></div>
+    </div>
+    <div style="margin-top:14px;padding:14px;border:1.5px solid var(--primary-tint);border-radius:12px;background:var(--primary-tint);">
+      <div style="font-weight:800;margin-bottom:8px;">💰 تسجيل بيع</div>
+      <div class="field"><label>كام اتباع دلوقتي؟ (هيتضاف على المباع)</label><input id="fe_soldNow" type="number" min="0" placeholder="مثال: 2"></div>
+      <div class="field" style="margin-bottom:0;"><label>مبلغ البيع (ج.م) — هيتسجل إيراد في الحسابات</label><input id="fe_amount" type="number" min="0" step="0.01" placeholder="مثال: 400"></div>
+    </div>
+    <div class="modal-actions" style="justify-content:space-between;flex-wrap:wrap;">
+      <button class="btn danger-outline" onclick="deleteFattening('${id}')">🗑️ حذف الدفعة</button>
+      <div style="display:flex;gap:10px;">
+        <button class="btn secondary" onclick="closeModal()">إلغاء</button>
+        <button class="btn" onclick="saveFatteningEdit('${id}')">حفظ</button>
+      </div>
+    </div>
+  `);
+}
+function saveFatteningEdit(id){
+  const f = DB.fattening.find(x=>x.id===id);
+  if(!f) return;
+  const isWean = !!f.motherId;
+  const $ = k => document.getElementById(k);
+  const count = $('fe_count').value;
+  const date = $('fe_date').value;
+  const saleDate = $('fe_sale').value;
+  const line = $('fe_line').value.trim();
+  const slot = $('fe_slot').value.trim();
+  const slotTo = $('fe_slotTo').value.trim();
+  const soldNow = parseInt($('fe_soldNow').value)||0;
+  const amountRaw = $('fe_amount').value;
+  const amount = amountRaw!=='' ? Number(amountRaw) : 0;
+  if(!isWean){
+    const name = $('fe_name').value.trim();
+    if(!name){ toast('اكتب اسم الدفعة'); return; }
+    f.name = name;
+  }
+  const newTotal = parseInt(count)||0;
+  const oldSold = parseInt(f.soldCount)||0;
+  if(amount>0 && soldNow<=0){ toast('اكتب عدد الأرانب اللي اتباعت مع المبلغ'); return; }
+  if(soldNow>0 && newTotal>0 && oldSold+soldNow>newTotal){ toast('عدد المباع أكبر من الباقي في الدفعة'); return; }
+  if(isWean){ f.weanCount = count; f.weanDate = date; }
+  else { f.count = count; f.startDate = date; }
+  f.saleAlertDate = saleDate || null;
+  f.line = line; f.slot = slot; f.slotTo = slotTo;
+  if(soldNow>0){
+    f.soldCount = oldSold + soldNow;
+    if(amount>0){
+      DB.finance.push({id:uid(), item:`بيع تسمين (${soldNow} أرنب) — ${fatLabel(f)}`, price:amount, date:todayISO(), type:'income'});
+    }
+  }
+  f.sold = newTotal>0 && (parseInt(f.soldCount)||0) >= newTotal;
+  saveDB(); closeModal(); render();
+  toast('اتحفظت التعديلات ✅' + (soldNow>0 && amount>0 ? ' وضاف إيراد في الحسابات 💰' : ''));
+}
 function editFatteningSold(id){
   const f = DB.fattening.find(x=>x.id===id);
-  const total = parseInt(f.weanCount)||0;
+  const total = fatTotal(f);
   const sold = parseInt(f.soldCount)||0;
   openModal(`
     <h2>تسجيل بيع</h2>
@@ -1717,14 +1799,11 @@ function saveFatteningSold(id){
   const add = parseInt(document.getElementById('fieldVal').value)||0;
   const amount = document.getElementById('fieldValAmount').value;
   if(add<=0){ toast('اكتب عدد صحيح'); return; }
-  const total = parseInt(f.weanCount)||0;
+  const total = fatTotal(f);
   f.soldCount = (parseInt(f.soldCount)||0) + add;
-  if(f.soldCount >= total) f.sold = true;
+  if(total>0 && f.soldCount >= total) f.sold = true;
   if(amount!=='' && Number(amount)>0){
-    const mom = DB.mothers.find(x=>x.id===f.motherId);
-    const male = DB.males.find(x=>x.id===f.maleId);
-    const label = `بيع تسمين (${add} أرنب) — ${mom?mom.name:'—'} × ${male?male.name:'—'}`;
-    DB.finance.push({id:uid(), item:label, price:Number(amount), date:todayISO(), type:'income'});
+    DB.finance.push({id:uid(), item:`بيع تسمين (${add} أرنب) — ${fatLabel(f)}`, price:Number(amount), date:todayISO(), type:'income'});
   }
   saveDB(); closeModal(); render();
   toast('اتسجل البيع ✅' + (amount!=='' && Number(amount)>0 ? ' وضاف إيراد في الحسابات 💰' : ''));
@@ -1778,8 +1857,11 @@ function saveFattening(){
   toast('تم الحفظ ✅');
 }
 function deleteFattening(id){
+  const f = DB.fattening.find(x=>x.id===id);
+  if(!confirm(`متأكد إنك عايز تحذف الدفعة "${f?fatLabel(f):''}"؟ مش هتقدر ترجعها.`)) return;
   DB.fattening = DB.fattening.filter(x=>x.id!==id);
-  saveDB(); render();
+  saveDB(); closeModal(); render();
+  toast('اتحذفت الدفعة');
 }
 
 /* ======================= VACCINATIONS ======================= */
