@@ -264,7 +264,7 @@ tr:last-child td{border-bottom:none;}
         </div>
         <div id="topbarActions"></div>
       </div>
-      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.7.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
+      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.7.1</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
     </div>
     <div id="content"></div>
   </main>
@@ -280,7 +280,7 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 /* ======================= DATA LAYER ======================= */
-const APP_VERSION = '4.7.0';
+const APP_VERSION = '4.7.1';
 const DB_KEY = 'rabbitFarmDB_v1';
 function loadDB(){
   try{
@@ -1116,7 +1116,7 @@ function renderMatingsList(){
   if(DB.matings.length===0){
     return `<div class="empty">لسه مفيش عمليات تلقيح مسجلة. دوس "تسجيل تلقيح جديد" عشان تبدأ.</div>`;
   }
-  const sorted = [...DB.matings].sort((a,b)=> (b.matingDate||'').localeCompare(a.matingDate||''));
+  const sorted = [...DB.matings].sort((a,b)=> (a.matingDate||'').localeCompare(b.matingDate||''));
   const rows = sorted.map(mt=>{
     const mom = DB.mothers.find(x=>x.id===mt.motherId);
     const male = DB.males.find(x=>x.id===mt.maleId);
