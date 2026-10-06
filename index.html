@@ -264,7 +264,7 @@ tr:last-child td{border-bottom:none;}
         </div>
         <div id="topbarActions"></div>
       </div>
-      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.6.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
+      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.7.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
     </div>
     <div id="content"></div>
   </main>
@@ -280,7 +280,7 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 /* ======================= DATA LAYER ======================= */
-const APP_VERSION = '4.6.0';
+const APP_VERSION = '4.7.0';
 const DB_KEY = 'rabbitFarmDB_v1';
 function loadDB(){
   try{
@@ -1331,9 +1331,10 @@ function renderMatingDetail(mt){
         <div class="field"><label>عدد الفطام</label><input id="f_weanCount" type="number" placeholder="مثال: 5"></div>
         <div class="field"><label>تاريخ الفطام الفعلي</label><input id="f_weanDate" type="date" value="${autoWean}"></div>
       </div>
+      <div class="field"><label>رقم الخط</label><input id="f_weanLine" inputmode="numeric" pattern="[0-9]*" placeholder="مثال: 3"></div>
       <div class="field-row">
-        <div class="field"><label>رقم الخط</label><input id="f_weanLine" inputmode="numeric" pattern="[0-9]*" placeholder="مثال: 3"></div>
-        <div class="field"><label>رقم العين</label><input id="f_weanSlot" inputmode="numeric" pattern="[0-9]*" placeholder="مثال: 7"></div>
+        <div class="field"><label>من عين</label><input id="f_weanSlot" inputmode="numeric" pattern="[0-9]*" placeholder="مثال: 7"></div>
+        <div class="field"><label>إلى عين</label><input id="f_weanSlotTo" inputmode="numeric" pattern="[0-9]*" placeholder="مثال: 9"></div>
       </div>
       <button class="btn" onclick="completeWeaning('${mt.id}')">تسجيل الفطام وتحويلها للتسمين</button>
     </div>`;
@@ -1395,13 +1396,14 @@ function completeWeaning(matingId){
   const weanDate = document.getElementById('f_weanDate').value;
   const line = document.getElementById('f_weanLine').value.trim();
   const slot = document.getElementById('f_weanSlot').value.trim();
+  const slotTo = document.getElementById('f_weanSlotTo').value.trim();
   if(!weanCount || !weanDate){ toast('اكتب عدد الفطام والتاريخ'); return; }
   mt.weanCount = weanCount;
   mt.weanDate = weanDate;
   mt.converted = true;
   DB.fattening.push({
     id: uid(), motherId: mt.motherId, maleId: mt.maleId,
-    weanDate, weanCount, line, slot,
+    weanDate, weanCount, line, slot, slotTo,
     birthDate: mt.actualBirthDate,
     saleAlertDate: mt.actualBirthDate ? addDays(mt.actualBirthDate,60) : null,
     sourceMatingId: mt.id
@@ -1667,7 +1669,8 @@ function renderFattening(){
         const sold = parseInt(f.soldCount)||0;
         const remaining = total - sold;
         const remainingTxt = total===0 ? '—' : (remaining<=0 ? 'اتباعت بالكامل ✅' : `${remaining} باقي`);
-        const loc = (f.line || f.slot) ? `خط ${f.line||'—'} · عين ${f.slot||'—'}` : '—';
+        const slotTxt = f.slot ? (f.slotTo && f.slotTo!==f.slot ? `${f.slot}-${f.slotTo}` : f.slot) : '—';
+        const loc = (f.line || f.slot) ? `خط ${f.line||'—'} · عين ${slotTxt}` : '—';
         return `
         <tr>
           <td>
@@ -1684,7 +1687,7 @@ function renderFattening(){
       }
       return `
         <tr>
-          <td>${f.name}</td><td>${f.count}</td><td>—</td><td>${(f.line||f.slot)?`خط ${f.line||'—'} · عين ${f.slot||'—'}`:'—'}</td><td>${fmtDate(f.startDate)}</td><td>—</td>
+          <td>${f.name}</td><td>${f.count}</td><td>—</td><td>${(f.line||f.slot)?`خط ${f.line||'—'} · عين ${f.slot?(f.slotTo&&f.slotTo!==f.slot?f.slot+'-'+f.slotTo:f.slot):'—'}`:'—'}</td><td>${fmtDate(f.startDate)}</td><td>—</td>
           <td><button class="btn small danger-outline" onclick="deleteFattening('${f.id}')">حذف</button></td>
         </tr>`;
     }).join('');
@@ -1751,9 +1754,10 @@ function openFatteningForm(){
       <div class="field"><label>العدد</label><input id="f_fcount" type="number"></div>
       <div class="field"><label>تاريخ البدء</label><input id="f_fstart" type="date" value="${todayISO()}"></div>
     </div>
+    <div class="field"><label>رقم الخط</label><input id="f_fline" inputmode="numeric" pattern="[0-9]*" placeholder="مثال: 3"></div>
     <div class="field-row">
-      <div class="field"><label>رقم الخط</label><input id="f_fline" inputmode="numeric" pattern="[0-9]*" placeholder="مثال: 3"></div>
-      <div class="field"><label>رقم العين</label><input id="f_fslot" inputmode="numeric" pattern="[0-9]*" placeholder="مثال: 7"></div>
+      <div class="field"><label>من عين</label><input id="f_fslot" inputmode="numeric" pattern="[0-9]*" placeholder="مثال: 7"></div>
+      <div class="field"><label>إلى عين</label><input id="f_fslotTo" inputmode="numeric" pattern="[0-9]*" placeholder="مثال: 9"></div>
     </div>
     <div class="modal-actions">
       <button class="btn secondary" onclick="closeModal()">إلغاء</button>
@@ -1767,8 +1771,9 @@ function saveFattening(){
   const startDate = document.getElementById('f_fstart').value;
   const line = document.getElementById('f_fline').value.trim();
   const slot = document.getElementById('f_fslot').value.trim();
+  const slotTo = document.getElementById('f_fslotTo').value.trim();
   if(!name){ toast('اكتب اسم الدفعة'); return; }
-  DB.fattening.push({id:uid(), name, count, startDate, line, slot});
+  DB.fattening.push({id:uid(), name, count, startDate, line, slot, slotTo});
   saveDB(); closeModal(); render();
   toast('تم الحفظ ✅');
 }
