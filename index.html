@@ -264,7 +264,7 @@ tr:last-child td{border-bottom:none;}
         </div>
         <div id="topbarActions"></div>
       </div>
-      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.7.3</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
+      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.7.4</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
     </div>
     <div id="content"></div>
   </main>
@@ -280,7 +280,7 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 /* ======================= DATA LAYER ======================= */
-const APP_VERSION = '4.7.3';
+const APP_VERSION = '4.7.4';
 const DB_KEY = 'rabbitFarmDB_v1';
 function loadDB(){
   try{
@@ -1696,7 +1696,7 @@ function renderFattening(){
           <td>${total||'—'}${f.weanWeight?`<div style="font-size:11px;color:var(--muted);margin-top:2px;">${f.weanWeight} جم</div>`:''}</td>
           <td>${remainingTxt}${soldBtn}</td>
           <td>${fatSlotTxt(f)}</td>
-          <td>${fmtDate(f.motherId ? f.weanDate : f.startDate)}</td>
+          <td>${f.birthDate ? fmtDate(f.birthDate)+`<div style="font-size:12px;color:var(--primary-dark);font-weight:700;margin-top:3px;">عمرهم ${Math.max(0,-daysUntil(f.birthDate))} يوم</div>` : '—'}</td>
           <td>${f.saleAlertDate?fmtDate(f.saleAlertDate):'—'}${saleNear && remaining>0?' 🔔':''}</td>
           <td><button class="btn small secondary" style="white-space:nowrap;" onclick="openFatteningEdit('${f.id}')">✏️ تعديل</button></td>
         </tr>`;
@@ -1704,7 +1704,7 @@ function renderFattening(){
     return headerRow + itemRows;
   }).join('');
   return `<div class="table-wrap"><table>
-    <thead><tr><th>الدفعة</th><th>العدد</th><th>الباقي</th><th>الموقع</th><th>تاريخ الفطام</th><th>ميعاد البيع المتوقع</th><th></th></tr></thead>
+    <thead><tr><th>الدفعة</th><th>العدد</th><th>الباقي</th><th>الموقع</th><th>تاريخ الميلاد والعمر</th><th>ميعاد البيع المتوقع</th><th></th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
 }
 /* صفحة تعديل الدفعة: بياناتها + تسجيل البيع + الحذف */
@@ -1725,6 +1725,7 @@ function openFatteningEdit(id){
       <div class="field"><label>العدد الكلي</label><input id="fe_count" type="number" min="0" value="${total||''}"></div>
       <div class="field"><label>${isWean?'تاريخ الفطام':'تاريخ البدء'}</label><input id="fe_date" type="date" value="${(isWean?f.weanDate:f.startDate)||''}"></div>
     </div>
+    <div class="field"><label>تاريخ الميلاد الفعلي</label><input id="fe_birth" type="date" value="${f.birthDate||''}"></div>
     ${isWean?`<div class="field"><label>وزن الفطام (متوسط الأرنب بالجرام)</label><input id="fe_weanWeight" type="number" inputmode="decimal" min="0" value="${f.weanWeight||''}"></div>`:''}
     <div class="field"><label>ميعاد البيع المتوقع</label><input id="fe_sale" type="date" value="${f.saleAlertDate||''}"></div>
     <div class="field"><label>رقم الخط</label><input id="fe_line" inputmode="numeric" pattern="[0-9]*" value="${f.line||''}"></div>
@@ -1776,6 +1777,7 @@ function saveFatteningEdit(id){
     if(mtSrc){ mtSrc.weanCount = count; mtSrc.weanDate = date; mtSrc.weanWeight = f.weanWeight; }
   }
   else { f.count = count; f.startDate = date; }
+  f.birthDate = $('fe_birth').value || null;
   f.saleAlertDate = saleDate || null;
   f.line = line; f.slot = slot; f.slotTo = slotTo;
   if(soldNow>0){
@@ -1842,6 +1844,7 @@ function openFatteningForm(){
       <div class="field"><label>العدد</label><input id="f_fcount" type="number"></div>
       <div class="field"><label>تاريخ البدء</label><input id="f_fstart" type="date" value="${todayISO()}"></div>
     </div>
+    <div class="field"><label>تاريخ الميلاد الفعلي (اختياري)</label><input id="f_fbirth" type="date"></div>
     <div class="field"><label>رقم الخط</label><input id="f_fline" inputmode="numeric" pattern="[0-9]*" placeholder="مثال: 3"></div>
     <div class="field-row">
       <div class="field"><label>من عين</label><input id="f_fslot" inputmode="numeric" pattern="[0-9]*" placeholder="مثال: 7"></div>
@@ -1861,7 +1864,8 @@ function saveFattening(){
   const slot = document.getElementById('f_fslot').value.trim();
   const slotTo = document.getElementById('f_fslotTo').value.trim();
   if(!name){ toast('اكتب اسم الدفعة'); return; }
-  DB.fattening.push({id:uid(), name, count, startDate, line, slot, slotTo});
+  const birthDate = document.getElementById('f_fbirth').value || null;
+  DB.fattening.push({id:uid(), name, count, startDate, birthDate, line, slot, slotTo});
   saveDB(); closeModal(); render();
   toast('تم الحفظ ✅');
 }
