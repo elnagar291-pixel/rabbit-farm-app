@@ -264,7 +264,7 @@ tr:last-child td{border-bottom:none;}
         </div>
         <div id="topbarActions"></div>
       </div>
-      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.7.2</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
+      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.7.3</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
     </div>
     <div id="content"></div>
   </main>
@@ -280,7 +280,7 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 /* ======================= DATA LAYER ======================= */
-const APP_VERSION = '4.7.2';
+const APP_VERSION = '4.7.3';
 const DB_KEY = 'rabbitFarmDB_v1';
 function loadDB(){
   try{
@@ -1309,7 +1309,7 @@ function renderMatingDetail(mt){
     weanSection = `
     <div class="section">
       <div class="section-title">🌾 الفطام</div>
-      <div class="empty" style="padding:16px;">تم تسجيل الفطام (${mt.weanCount||'—'} أرنب بتاريخ ${fmtDate(mt.weanDate)}) وتحولت الدفعة لصفحة "التسمين" ✅</div>
+      <div class="empty" style="padding:16px;">تم تسجيل الفطام (${mt.weanCount||'—'} أرنب بتاريخ ${fmtDate(mt.weanDate)}${mt.weanWeight?` — متوسط وزن الفطام ${mt.weanWeight} جرام`:''}) وتحولت الدفعة لصفحة "التسمين" ✅</div>
     </div>`;
   } else if(mt.failed){
     weanSection = `
@@ -1331,6 +1331,7 @@ function renderMatingDetail(mt){
         <div class="field"><label>عدد الفطام</label><input id="f_weanCount" type="number" placeholder="مثال: 5"></div>
         <div class="field"><label>تاريخ الفطام الفعلي</label><input id="f_weanDate" type="date" value="${autoWean}"></div>
       </div>
+      <div class="field"><label>وزن الفطام (متوسط وزن الأرنب بالجرام)</label><input id="f_weanWeight" type="number" inputmode="decimal" min="0" placeholder="مثال: 750"></div>
       <div class="field"><label>رقم الخط</label><input id="f_weanLine" inputmode="numeric" pattern="[0-9]*" placeholder="مثال: 3"></div>
       <div class="field-row">
         <div class="field"><label>من عين</label><input id="f_weanSlot" inputmode="numeric" pattern="[0-9]*" placeholder="مثال: 7"></div>
@@ -1397,13 +1398,15 @@ function completeWeaning(matingId){
   const line = document.getElementById('f_weanLine').value.trim();
   const slot = document.getElementById('f_weanSlot').value.trim();
   const slotTo = document.getElementById('f_weanSlotTo').value.trim();
+  const weanWeight = document.getElementById('f_weanWeight').value;
   if(!weanCount || !weanDate){ toast('اكتب عدد الفطام والتاريخ'); return; }
   mt.weanCount = weanCount;
+  mt.weanWeight = weanWeight;
   mt.weanDate = weanDate;
   mt.converted = true;
   DB.fattening.push({
     id: uid(), motherId: mt.motherId, maleId: mt.maleId,
-    weanDate, weanCount, line, slot, slotTo,
+    weanDate, weanCount, weanWeight, line, slot, slotTo,
     birthDate: mt.actualBirthDate,
     saleAlertDate: mt.actualBirthDate ? addDays(mt.actualBirthDate,60) : null,
     sourceMatingId: mt.id
@@ -1690,7 +1693,7 @@ function renderFattening(){
       return `
         <tr>
           <td>${nameCell}</td>
-          <td>${total||'—'}</td>
+          <td>${total||'—'}${f.weanWeight?`<div style="font-size:11px;color:var(--muted);margin-top:2px;">${f.weanWeight} جم</div>`:''}</td>
           <td>${remainingTxt}${soldBtn}</td>
           <td>${fatSlotTxt(f)}</td>
           <td>${fmtDate(f.motherId ? f.weanDate : f.startDate)}</td>
@@ -1722,6 +1725,7 @@ function openFatteningEdit(id){
       <div class="field"><label>العدد الكلي</label><input id="fe_count" type="number" min="0" value="${total||''}"></div>
       <div class="field"><label>${isWean?'تاريخ الفطام':'تاريخ البدء'}</label><input id="fe_date" type="date" value="${(isWean?f.weanDate:f.startDate)||''}"></div>
     </div>
+    ${isWean?`<div class="field"><label>وزن الفطام (متوسط الأرنب بالجرام)</label><input id="fe_weanWeight" type="number" inputmode="decimal" min="0" value="${f.weanWeight||''}"></div>`:''}
     <div class="field"><label>ميعاد البيع المتوقع</label><input id="fe_sale" type="date" value="${f.saleAlertDate||''}"></div>
     <div class="field"><label>رقم الخط</label><input id="fe_line" inputmode="numeric" pattern="[0-9]*" value="${f.line||''}"></div>
     <div class="field-row">
@@ -1765,7 +1769,12 @@ function saveFatteningEdit(id){
   const oldSold = parseInt(f.soldCount)||0;
   if(amount>0 && soldNow<=0){ toast('اكتب عدد الأرانب اللي اتباعت مع المبلغ'); return; }
   if(soldNow>0 && newTotal>0 && oldSold+soldNow>newTotal){ toast('عدد المباع أكبر من الباقي في الدفعة'); return; }
-  if(isWean){ f.weanCount = count; f.weanDate = date; }
+  if(isWean){
+    f.weanCount = count; f.weanDate = date;
+    f.weanWeight = $('fe_weanWeight').value;
+    const mtSrc = DB.matings.find(x=>x.id===f.sourceMatingId);
+    if(mtSrc){ mtSrc.weanCount = count; mtSrc.weanDate = date; mtSrc.weanWeight = f.weanWeight; }
+  }
   else { f.count = count; f.startDate = date; }
   f.saleAlertDate = saleDate || null;
   f.line = line; f.slot = slot; f.slotTo = slotTo;
