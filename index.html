@@ -268,7 +268,7 @@ tr:last-child td{border-bottom:none;}
         </div>
         <div id="topbarActions"></div>
       </div>
-      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.8.4</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
+      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.8.6</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
     </div>
     <div id="content"></div>
   </main>
@@ -284,7 +284,7 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 /* ======================= DATA LAYER ======================= */
-const APP_VERSION = '4.8.4';
+const APP_VERSION = '4.8.6';
 const DB_KEY = 'rabbitFarmDB_v1';
 function loadDB(){
   try{
@@ -612,13 +612,15 @@ window.addEventListener('popstate', function(e){
     hideModalOnly();
     return;
   }
-  // مفيش نافذة مفتوحة: زرار الرجوع يوديك للرئيسية بدل ما يقفل التطبيق
-  if(currentPage !== 'dashboard'){
+  // مفيش نافذة مفتوحة: الرجوع خطوة خطوة، ومن الرئيسية يفضل جوه التطبيق
+  const backBtn = Array.from(document.querySelectorAll('button')).find(x=>/رجوع للقائمة/.test(x.textContent));
+  if(backBtn){
+    backBtn.click();
+  } else if(currentPage !== 'dashboard'){
     currentPage = 'dashboard';
     render();
-    try{ history.pushState({navGuard:true}, ''); }catch(err){}
   }
-  // لو كنت أصلاً في الرئيسية، سيبها تسيب التطبيق يقفل عادي (دوس رجوع تاني)
+  try{ history.pushState({navGuard:true}, ''); }catch(err){}
 });
 document.getElementById('overlay').addEventListener('click', e=>{
   if(e.target.id==='overlay') closeModal();
@@ -692,8 +694,9 @@ function pTag(x){ const c=x>=0.125?'#C0524A':x>=0.0625?'#C77B4A':'#2E7D5B'; retu
 function pLbl(x){ return x>=0.125?'ممنوع - قرابة شديدة':x>=0.0625?'تحذير - قرابة':'آمن'; }
 function pName(a){ return (a.sex==='M'?'♂ ':'♀ ')+pesc(a.name)+(a.breed?' - '+pesc(a.breed):'')+(a.ext?' (خارج القطيع)':''); }
 function pIsAnc(anc,id,seen){ if(!anc) return false; const r=_A[id]; if(!r) return false; return [r.sireId,r.damId].some(p=>p&&(p===anc||(!seen[p]&&(seen[p]=1,pIsAnc(anc,p,seen))))); }
+function pSorted(){ return Object.values(_A).sort((a,b)=>((a.ext?1:0)-(b.ext?1:0))||String(a.name).localeCompare(String(b.name),'ar',{numeric:true})); }
 function pOpts(sex,cur,ph,skip){
-  return `<option value="">${ph}</option>`+Object.values(_A).filter(a=>a.sex===sex&&a.id!==skip&&!pIsAnc(skip,a.id,{})).map(a=>`<option value="${a.id}" ${a.id===cur?'selected':''}>${pName(a)}</option>`).join('');
+  return `<option value="">${ph}</option>`+pSorted().filter(a=>a.sex===sex&&a.id!==skip&&!pIsAnc(skip,a.id,{})).map(a=>`<option value="${a.id}" ${a.id===cur?'selected':''}>${pName(a)}</option>`).join('');
 }
 function parentSelects(pre,x){
   pReset();
@@ -753,7 +756,7 @@ function delPed(id){
 }
 function renderPedigree(){
   pReset();
-  const all=Object.values(_A);
+  const all=pSorted();
   let h=`<div class="section"><div class="section-title">🌳 شجرة النسب</div>
   <div class="field"><select onchange="pedSel=this.value;render()"><option value="">اختار أرنب</option>${all.map(a=>`<option value="${a.id}" ${a.id===pedSel?'selected':''}>${pName(a)}</option>`).join('')}</select></div>`;
   if(pedSel&&_A[pedSel]) h+=`<div style="margin:6px 0;">معامل القرابة: ${pTag(pF(pedSel))}</div><div class="ptree">${pNode(pedSel,0)}</div><small style="color:var(--muted)">الأزرق ذكر والوردي أنثى. الأرنب ثم الأبوين ثم الأجداد.</small>`;
