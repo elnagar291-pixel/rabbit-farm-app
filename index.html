@@ -268,7 +268,7 @@ tr:last-child td{border-bottom:none;}
         </div>
         <div id="topbarActions"></div>
       </div>
-      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.8.1</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
+      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.8.3</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
     </div>
     <div id="content"></div>
   </main>
@@ -284,7 +284,7 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 /* ======================= DATA LAYER ======================= */
-const APP_VERSION = '4.8.1';
+const APP_VERSION = '4.8.3';
 const DB_KEY = 'rabbitFarmDB_v1';
 function loadDB(){
   try{
@@ -674,9 +674,9 @@ function pesc(t){ return String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;'
 function pv(id){ const e=document.getElementById(id); return e?e.value:''; }
 function pReset(){
   _dc={}; _pc={}; _A={};
-  (DB.pedigree||[]).forEach(x=>{ _A[x.id]={id:x.id,name:x.name,sex:x.sex,breed:x.breed,sireId:x.sireId,damId:x.damId,ext:true}; });
-  DB.males.forEach(x=>{ _A[x.id]={id:x.id,name:x.name,sex:'M',breed:x.breed,sireId:x.sireId,damId:x.damId}; });
-  DB.mothers.forEach(x=>{ _A[x.id]={id:x.id,name:x.name,sex:'F',breed:x.breed,sireId:x.sireId,damId:x.damId}; });
+  (DB.pedigree||[]).forEach(x=>{ _A[x.id]={id:x.id,name:x.name,sex:x.sex,breed:x.breed,sireId:x.sireId,damId:x.damId,source:x.source,ext:true}; });
+  DB.males.forEach(x=>{ _A[x.id]={id:x.id,name:x.name,sex:'M',breed:x.breed,sireId:x.sireId,damId:x.damId,source:x.source}; });
+  DB.mothers.forEach(x=>{ _A[x.id]={id:x.id,name:x.name,sex:'F',breed:x.breed,sireId:x.sireId,damId:x.damId,source:x.source}; });
 }
 function pdep(id){ const r=_A[id]; if(!r) return 0; if(_dc[id]!=null) return _dc[id]; _dc[id]=0; return _dc[id]=(r.sireId||r.damId)?1+Math.max(pdep(r.sireId),pdep(r.damId)):0; }
 function pphi(a,b){
@@ -697,17 +697,20 @@ function pOpts(sex,cur,ph,skip){
 function parentSelects(pre,x){
   pReset();
   return `<div class="field-row"><div class="field"><label>الأب</label><select id="${pre}sire">${pOpts('M',x.sireId,'مجهول',x.id)}</select></div>
-  <div class="field"><label>الأم</label><select id="${pre}dam">${pOpts('F',x.damId,'مجهولة',x.id)}</select></div></div>`;
+  <div class="field"><label>الأم</label><select id="${pre}dam">${pOpts('F',x.damId,'مجهولة',x.id)}</select></div></div>
+  <div class="field"><label>🏠 المزرعة / المصدر (لو الأب والأم مجهولين)</label><input id="${pre}src" list="farmList" value="${pesc(x.source||'')}" placeholder="اسم المزرعة اللي جبته منها"><datalist id="farmList">${pFarms().map(f=>`<option value="${pesc(f)}">`).join('')}</datalist></div>`;
 }
+function pFarms(){ const o={}; [].concat(DB.males,DB.mothers,DB.pedigree).forEach(a=>{ if(a.source) o[a.source]=1; }); return Object.keys(o); }
 function pArchive(id,sex){
   const list = sex==='M'?DB.males:DB.mothers; const x=list.find(y=>y.id===id); if(!x) return;
   const used=[].concat(DB.males,DB.mothers,DB.pedigree).some(o=>o.sireId===id||o.damId===id);
-  if(used) DB.pedigree.push({id:x.id,name:x.name,sex,breed:x.breed,sireId:x.sireId||'',damId:x.damId||'',archived:true});
+  if(used) DB.pedigree.push({id:x.id,name:x.name,sex,breed:x.breed,notes:x.notes||'',source:x.source||'',sireId:x.sireId||'',damId:x.damId||'',archived:true});
 }
 function pNode(id,d){
   const r=_A[id];
   if(!id||!r) return '<div class="pn"><div class="pb u">مجهول</div></div>';
-  const ch=(d<3&&(r.sireId||r.damId))?`<div class="pch">${pNode(r.sireId,d+1)}${pNode(r.damId,d+1)}</div>`:'';
+  let ch=(d<3&&(r.sireId||r.damId))?`<div class="pch">${pNode(r.sireId,d+1)}${pNode(r.damId,d+1)}</div>`:'';
+  if(!ch && !(r.sireId||r.damId) && r.source) ch=`<div class="pch"><div class="pn"><div class="pb u">🏠 ${pesc(r.source)}</div></div></div>`;
   return `<div class="pn"><div class="pb ${r.sex}">${pesc(r.name)}<small>${pesc(r.breed||'')}</small></div>${ch}</div>`;
 }
 function openPedForm(){
@@ -717,11 +720,12 @@ function openPedForm(){
   <div class="field"><label>الجنس</label><select id="f_psex"><option value="M">ذكر</option><option value="F">أنثى</option></select></div>
   <div class="field"><label>السلالة</label><select id="f_pbreed">${BREEDS.map(b=>`<option value="${b}">${b}</option>`).join('')}</select></div>
   ${parentSelects('f_p',{})}
+  <div class="field"><label>ملاحظات / المزرعة اللي جه منها</label><input id="f_pnotes" placeholder="مثال: من مزرعة ..."></div>
   <div class="modal-actions"><button class="btn secondary" onclick="closeModal()">إلغاء</button><button class="btn" onclick="savePed()">إضافة</button></div>`);
 }
 function savePed(){
   const name=pv('f_pname').trim(); if(!name){ toast('اكتب الاسم'); return; }
-  DB.pedigree.push({id:uid(),name,sex:pv('f_psex'),breed:pv('f_pbreed'),sireId:pv('f_psire'),damId:pv('f_pdam')});
+  DB.pedigree.push({id:uid(),name,sex:pv('f_psex'),breed:pv('f_pbreed'),sireId:pv('f_psire'),damId:pv('f_pdam'),source:pv('f_psrc').trim(),notes:pv('f_pnotes').trim()});
   saveDB(); closeModal(); render(); toast('تم الحفظ ✅');
 }
 function delPed(id){
@@ -747,7 +751,7 @@ function renderPedigree(){
     h+=`<div style="margin-top:8px;"><b>أحسن ذكور للأنثى المختارة</b>`+(c.length?c.map(o=>`<div class="alert-item"><div class="txt"><div>♂ ${pesc(o.m.name)} <small>${pesc(o.m.breed||'')}</small></div></div>${pTag(o.x)}</div>`).join(''):'<div class="empty">مفيش ذكور مسجلة</div>')+`</div>`;
   }
   h+='</div>';
-  h+=`<div class="section"><div class="section-title">📜 أجداد وأرانب خارج القطيع</div>`+(DB.pedigree.length?DB.pedigree.map(x=>`<div class="alert-item"><div class="txt"><div>${x.sex==='M'?'♂':'♀'} <b>${pesc(x.name)}</b> <small>${pesc(x.breed||'')}${x.archived?' · محذوف من القطيع':''}</small></div></div><button class="btn small secondary" onclick="delPed('${x.id}')">حذف</button></div>`).join(''):'<div class="empty">مفيش أجداد مسجلين. اضغط + إضافة</div>')+'</div>';
+  h+=`<div class="section"><div class="section-title">📜 أجداد وأرانب خارج القطيع</div>`+(DB.pedigree.length?DB.pedigree.map(x=>`<div class="alert-item"><div class="txt"><div>${x.sex==='M'?'♂':'♀'} <b>${pesc(x.name)}</b> <small>${pesc(x.breed||'')}${x.archived?' · محذوف من القطيع':''}${x.source?' · 🏠 '+pesc(x.source):''}</small></div>${x.notes?`<div style="font-size:12px;color:var(--muted);margin-top:3px;">📝 ${pesc(x.notes)}</div>`:''}</div><button class="btn small secondary" onclick="delPed('${x.id}')">حذف</button></div>`).join(''):'<div class="empty">مفيش أجداد مسجلين. اضغط + إضافة</div>')+'</div>';
   return h;
 }
 
@@ -914,10 +918,10 @@ function saveMother(id){
   if(!name){ toast('اكتب اسم الأم'); return; }
   if(id){
     const m = DB.mothers.find(x=>x.id===id);
-    m.name=name; m.birthDate=birth; m.breed=breed; m.notes=notes; m.line=line; m.slot=slot; m.photo = window._photoData || m.photo || null; m.sireId=pv('f_sire'); m.damId=pv('f_dam');
+    m.name=name; m.birthDate=birth; m.breed=breed; m.notes=notes; m.line=line; m.slot=slot; m.photo = window._photoData || m.photo || null; m.sireId=pv('f_sire'); m.damId=pv('f_dam'); m.source=pv('f_src').trim();
   } else {
     DB.mothers.push({
-      id: uid(), name, birthDate: birth, breed, notes, line, slot, photo: window._photoData || null, sireId:pv('f_sire'), damId:pv('f_dam'),
+      id: uid(), name, birthDate: birth, breed, notes, line, slot, photo: window._photoData || null, sireId:pv('f_sire'), damId:pv('f_dam'), source:pv('f_src').trim(),
       meds:[], nextTreatmentDate:null, nextTreatmentName:null
     });
   }
@@ -1566,6 +1570,7 @@ function openMaleForm(existing){
         <input id="f_mphoto" type="file" accept="image/*" onchange="previewMalePhoto(this)" style="position:absolute;opacity:0;width:1px;height:1px;">
       </label>
     </div>
+    <div class="field"><label>ملاحظات / المزرعة اللي جه منها (اختياري)</label><textarea id="f_mnotes" rows="2">${x.notes||''}</textarea></div>
     <div class="modal-actions">
       <button class="btn secondary" onclick="closeModal()">إلغاء</button>
       <button class="btn" onclick="saveMale('${existing?existing.id:''}')">${existing?'حفظ التعديلات':'إضافة'}</button>
@@ -1592,10 +1597,10 @@ function saveMale(id){
   if(!name){ toast('اكتب اسم الذكر'); return; }
   if(id){
     const x = DB.males.find(y=>y.id===id);
-    x.name=name; x.birthDate=birthDate; x.breed=breed; x.line=line; x.slot=slot; x.photo = window._malePhotoData || x.photo || null; x.sireId=pv('f_msire'); x.damId=pv('f_mdam');
+    x.name=name; x.birthDate=birthDate; x.breed=breed; x.line=line; x.slot=slot; x.photo = window._malePhotoData || x.photo || null; x.sireId=pv('f_msire'); x.damId=pv('f_mdam'); x.source=pv('f_msrc').trim(); x.notes=pv('f_mnotes').trim();
   } else {
     DB.males.push({
-      id:uid(), name, birthDate, breed, line, slot, photo: window._malePhotoData || null, sireId:pv('f_msire'), damId:pv('f_mdam'),
+      id:uid(), name, birthDate, breed, line, slot, photo: window._malePhotoData || null, sireId:pv('f_msire'), damId:pv('f_mdam'), source:pv('f_msrc').trim(), notes:pv('f_mnotes').trim(),
       matingCount:null, successRate:null, meds:[], nextTreatmentDate:null, nextTreatmentName:null
     });
   }
