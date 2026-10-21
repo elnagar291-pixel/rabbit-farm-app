@@ -233,6 +233,10 @@ tr:last-child td{border-bottom:none;}
 .finance-type.unknown{background:#eee;color:#666;}
 .finance-row-income{background:rgba(25,135,84,.045);}
 .finance-row-expense{background:rgba(220,53,69,.045);}
+
+.ptree{overflow-x:auto;padding:6px 0}.pn{display:flex;align-items:center;gap:8px}.pch{display:flex;flex-direction:column;gap:6px}
+.pb{border:2px solid #cfe0d6;border-radius:10px;padding:6px 10px;min-width:64px;text-align:center;background:#fff;font-size:13px}.pb small{display:block;color:var(--muted)}
+.pb.M{border-color:#3b82f6}.pb.F{border-color:#ec4899}.pb.u{opacity:.5}
 </style>
 </head>
 <body>
@@ -264,7 +268,7 @@ tr:last-child td{border-bottom:none;}
         </div>
         <div id="topbarActions"></div>
       </div>
-      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.7.5</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
+      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.8.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
     </div>
     <div id="content"></div>
   </main>
@@ -280,7 +284,7 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 /* ======================= DATA LAYER ======================= */
-const APP_VERSION = '4.7.5';
+const APP_VERSION = '4.8.0';
 const DB_KEY = 'rabbitFarmDB_v1';
 function loadDB(){
   try{
@@ -293,6 +297,7 @@ function saveDB(){
   try{ localStorage.setItem(DB_KEY, JSON.stringify(DB)); }catch(e){ toast('تعذر الحفظ محليًا'); }
 }
 let DB = loadDB();
+if(!DB.pedigree) DB.pedigree = [];
 if(!DB.settings) DB.settings = {whatsapp:'201095222441'};
 const WHATSAPP_NUMBER_DEFAULT = '201095222441';
 
@@ -440,6 +445,7 @@ const PAGES = [
   {id:'matings', label:'التلقيح', ico:'❤️'},
   {id:'fattening', label:'التسمين', ico:'📈'},
   {id:'finance', label:'حسابات', ico:'💰'},
+  {id:'pedigree', label:'النسب', ico:'🧬'},
 ];
 let currentPage = 'dashboard';
 
@@ -630,6 +636,7 @@ function render(){
     males:'المعلومات الأساسية والإحصائيات لكل ذكر',
     fattening:'دفعات التسمين بعد الفطام ومواعيد البيع',
     finance:'أسعار العلف واللحم والحسابات',
+    pedigree:'شجرة النسب وقرابة التزاوج وترشيح الأزواج',
   };
   document.getElementById('pageSub').textContent = subs[currentPage];
 
@@ -649,13 +656,99 @@ function render(){
     actions.innerHTML = `<button class="btn secondary icon-btn" onclick="currentPage='dashboard';render()" title="الرئيسية">🏠</button><button class="btn" onclick="openFinanceForm()">+ قيد جديد</button>`;
   }
 
+  if(currentPage==='pedigree'){ actions.innerHTML = `<button class="btn secondary icon-btn" onclick="currentPage='dashboard';render()" title="الرئيسية">🏠</button><button class="btn" onclick="openPedForm()">+ إضافة</button>`; }
   const c = document.getElementById('content');
-  if(currentPage==='dashboard') c.innerHTML = renderDashboard();
+  if(currentPage==='pedigree') c.innerHTML = renderPedigree();
+  else if(currentPage==='dashboard') c.innerHTML = renderDashboard();
   else if(currentPage==='mothers') c.innerHTML = renderMothersList();
   else if(currentPage==='matings') c.innerHTML = renderMatingsList();
   else if(currentPage==='males') c.innerHTML = renderMales();
   else if(currentPage==='fattening') c.innerHTML = renderFattening();
   else if(currentPage==='finance') c.innerHTML = renderFinance();
+}
+
+
+/* ======================= PEDIGREE (النسب) ======================= */
+let pedSel='', pedM='', pedF='', _A={}, _dc={}, _pc={};
+function pesc(t){ return String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function pv(id){ const e=document.getElementById(id); return e?e.value:''; }
+function pReset(){
+  _dc={}; _pc={}; _A={};
+  (DB.pedigree||[]).forEach(x=>{ _A[x.id]={id:x.id,name:x.name,sex:x.sex,breed:x.breed,sireId:x.sireId,damId:x.damId,ext:true}; });
+  DB.males.forEach(x=>{ _A[x.id]={id:x.id,name:x.name,sex:'M',breed:x.breed,sireId:x.sireId,damId:x.damId}; });
+  DB.mothers.forEach(x=>{ _A[x.id]={id:x.id,name:x.name,sex:'F',breed:x.breed,sireId:x.sireId,damId:x.damId}; });
+}
+function pdep(id){ const r=_A[id]; if(!r) return 0; if(_dc[id]!=null) return _dc[id]; _dc[id]=0; return _dc[id]=(r.sireId||r.damId)?1+Math.max(pdep(r.sireId),pdep(r.damId)):0; }
+function pphi(a,b){
+  if(!a||!b||!_A[a]||!_A[b]) return 0;
+  const k=a<b?a+'|'+b:b+'|'+a; if(_pc[k]!=null) return _pc[k];
+  let v;
+  if(a===b){ const r=_A[a]; v=(1+pphi(r.sireId,r.damId))/2; }
+  else { let x=a,y=b; if(pdep(x)<pdep(y)){x=b;y=a;} const r=_A[x]; v=(r.sireId||r.damId)?0.5*(pphi(r.sireId,y)+pphi(r.damId,y)):0; }
+  return _pc[k]=v;
+}
+function pF(id){ const r=_A[id]; return r?pphi(r.sireId,r.damId):0; }
+function pTag(x){ const c=x>=0.125?'#C0524A':x>=0.0625?'#C77B4A':'#2E7D5B'; return `<span style="background:${c};color:#fff;padding:2px 8px;border-radius:99px;font-size:12px;">F ${(x*100).toFixed(1)}%</span>`; }
+function pLbl(x){ return x>=0.125?'ممنوع - قرابة شديدة':x>=0.0625?'تحذير - قرابة':'آمن'; }
+function pName(a){ return (a.sex==='M'?'♂ ':'♀ ')+pesc(a.name)+(a.ext?' (خارج القطيع)':''); }
+function pOpts(sex,cur,ph,skip){
+  return `<option value="">${ph}</option>`+Object.values(_A).filter(a=>a.sex===sex&&a.id!==skip).map(a=>`<option value="${a.id}" ${a.id===cur?'selected':''}>${pName(a)}</option>`).join('');
+}
+function parentSelects(pre,x){
+  pReset();
+  return `<div class="field-row"><div class="field"><label>الأب</label><select id="${pre}sire">${pOpts('M',x.sireId,'مجهول',x.id)}</select></div>
+  <div class="field"><label>الأم</label><select id="${pre}dam">${pOpts('F',x.damId,'مجهولة',x.id)}</select></div></div>`;
+}
+function pArchive(id,sex){
+  const list = sex==='M'?DB.males:DB.mothers; const x=list.find(y=>y.id===id); if(!x) return;
+  const used=[].concat(DB.males,DB.mothers,DB.pedigree).some(o=>o.sireId===id||o.damId===id);
+  if(used) DB.pedigree.push({id:x.id,name:x.name,sex,breed:x.breed,sireId:x.sireId||'',damId:x.damId||'',archived:true});
+}
+function pNode(id,d){
+  const r=_A[id];
+  if(!id||!r) return '<div class="pn"><div class="pb u">مجهول</div></div>';
+  const ch=(d<3&&(r.sireId||r.damId))?`<div class="pch">${pNode(r.sireId,d+1)}${pNode(r.damId,d+1)}</div>`:'';
+  return `<div class="pn"><div class="pb ${r.sex}">${pesc(r.name)}<small>${pesc(r.breed||'')}</small></div>${ch}</div>`;
+}
+function openPedForm(){
+  pReset();
+  openModal(`<h2>إضافة أرنب للنسب</h2><p class="sub">للأجداد أو أي أرنب مش في القطيع دلوقتي</p>
+  <div class="field"><label>الاسم / الرقم</label><input id="f_pname"></div>
+  <div class="field"><label>الجنس</label><select id="f_psex"><option value="M">ذكر</option><option value="F">أنثى</option></select></div>
+  <div class="field"><label>السلالة</label><select id="f_pbreed">${BREEDS.map(b=>`<option value="${b}">${b}</option>`).join('')}</select></div>
+  ${parentSelects('f_p',{})}
+  <div class="modal-actions"><button class="btn secondary" onclick="closeModal()">إلغاء</button><button class="btn" onclick="savePed()">إضافة</button></div>`);
+}
+function savePed(){
+  const name=pv('f_pname').trim(); if(!name){ toast('اكتب الاسم'); return; }
+  DB.pedigree.push({id:uid(),name,sex:pv('f_psex'),breed:pv('f_pbreed'),sireId:pv('f_psire'),damId:pv('f_pdam')});
+  saveDB(); closeModal(); render(); toast('تم الحفظ ✅');
+}
+function delPed(id){
+  if(!confirm('حذف الأرنب ده من النسب؟')) return;
+  DB.pedigree=DB.pedigree.filter(x=>x.id!==id);
+  [].concat(DB.males,DB.mothers,DB.pedigree).forEach(o=>{ if(o.sireId===id)o.sireId=''; if(o.damId===id)o.damId=''; });
+  saveDB(); render();
+}
+function renderPedigree(){
+  pReset();
+  const all=Object.values(_A);
+  let h=`<div class="section"><div class="section-title">🌳 شجرة النسب</div>
+  <div class="field"><select onchange="pedSel=this.value;render()"><option value="">اختار أرنب</option>${all.map(a=>`<option value="${a.id}" ${a.id===pedSel?'selected':''}>${pName(a)}</option>`).join('')}</select></div>`;
+  if(pedSel&&_A[pedSel]) h+=`<div style="margin:6px 0;">معامل القرابة: ${pTag(pF(pedSel))}</div><div class="ptree">${pNode(pedSel,0)}</div><small style="color:var(--muted)">الأزرق ذكر والوردي أنثى. الأرنب ثم الأبوين ثم الأجداد.</small>`;
+  else if(!all.length) h+='<div class="empty">سجّل أرانب الأول 🌿</div>';
+  h+='</div>';
+  h+=`<div class="section"><div class="section-title">❤️ فحص التزاوج</div>
+  <div class="field-row"><div class="field"><select onchange="pedM=this.value;render()">${pOpts('M',pedM,'الذكر')}</select></div>
+  <div class="field"><select onchange="pedF=this.value;render()">${pOpts('F',pedF,'الأنثى')}</select></div></div>`;
+  if(pedM&&pedF){ const x=pphi(pedM,pedF); h+=`<p>قرابة الصغار المتوقعة: ${pTag(x)} ${pLbl(x)}</p>`; }
+  if(pedF){
+    const c=DB.males.map(m=>({m,x:pphi(m.id,pedF)})).sort((a,b)=>a.x-b.x).slice(0,5);
+    h+=`<div style="margin-top:8px;"><b>أحسن ذكور للأنثى المختارة</b>`+(c.length?c.map(o=>`<div class="alert-item"><div class="txt"><div>♂ ${pesc(o.m.name)} <small>${pesc(o.m.breed||'')}</small></div></div>${pTag(o.x)}</div>`).join(''):'<div class="empty">مفيش ذكور مسجلة</div>')+`</div>`;
+  }
+  h+='</div>';
+  h+=`<div class="section"><div class="section-title">📜 أجداد وأرانب خارج القطيع</div>`+(DB.pedigree.length?DB.pedigree.map(x=>`<div class="alert-item"><div class="txt"><div>${x.sex==='M'?'♂':'♀'} <b>${pesc(x.name)}</b> <small>${pesc(x.breed||'')}${x.archived?' · محذوف من القطيع':''}</small></div></div><button class="btn small secondary" onclick="delPed('${x.id}')">حذف</button></div>`).join(''):'<div class="empty">مفيش أجداد مسجلين. اضغط + إضافة</div>')+'</div>';
+  return h;
 }
 
 /* ======================= DASHBOARD ======================= */
@@ -667,6 +760,7 @@ function renderDashboard(){
     {page:'matings', ico:'❤️', label:'التلقيح', count: DB.matings.filter(mt=>!mt.converted && !mt.failed).length},
     {page:'fattening', ico:'📈', label:'التسمين', count: DB.fattening.length},
     {page:'finance', ico:'💰', label:'حسابات', count: DB.finance.length},
+    {page:'pedigree', ico:'🧬', label:'النسب', count: DB.mothers.concat(DB.males).filter(x=>x.sireId||x.damId).length + DB.pedigree.length},
   ];
   const grid = `
     <div class="app-grid">
@@ -756,6 +850,7 @@ function openMotherForm(existing){
       <label>تاريخ الميلاد</label>
       <input id="f_birth" type="date" value="${m.birthDate||''}">
     </div>
+    ${parentSelects("f_",m)}
     <div class="field-row">
       <div class="field"><label>رقم الخط</label><input id="f_line" value="${m.line||''}" inputmode="numeric" pattern="[0-9]*" placeholder="مثال: 3"></div>
       <div class="field"><label>رقم العين</label><input id="f_slot" value="${m.slot||''}" inputmode="numeric" pattern="[0-9]*" placeholder="مثال: 7"></div>
@@ -819,10 +914,10 @@ function saveMother(id){
   if(!name){ toast('اكتب اسم الأم'); return; }
   if(id){
     const m = DB.mothers.find(x=>x.id===id);
-    m.name=name; m.birthDate=birth; m.breed=breed; m.notes=notes; m.line=line; m.slot=slot; m.photo = window._photoData || m.photo || null;
+    m.name=name; m.birthDate=birth; m.breed=breed; m.notes=notes; m.line=line; m.slot=slot; m.photo = window._photoData || m.photo || null; m.sireId=pv('f_sire'); m.damId=pv('f_dam');
   } else {
     DB.mothers.push({
-      id: uid(), name, birthDate: birth, breed, notes, line, slot, photo: window._photoData || null,
+      id: uid(), name, birthDate: birth, breed, notes, line, slot, photo: window._photoData || null, sireId:pv('f_sire'), damId:pv('f_dam'),
       meds:[], nextTreatmentDate:null, nextTreatmentName:null
     });
   }
@@ -831,7 +926,7 @@ function saveMother(id){
 }
 function deleteMother(id){
   if(!confirm('متأكد إنك عايز تمسح الأم دي؟')) return;
-  DB.mothers = DB.mothers.filter(m=>m.id!==id);
+  pArchive(id,'F'); DB.mothers = DB.mothers.filter(m=>m.id!==id);
   saveDB(); currentPage='mothers'; render();
 }
 
@@ -1175,6 +1270,8 @@ function saveMating(){
   const maleId = document.getElementById('f_matMale').value;
   const matingDate = document.getElementById('f_matDate').value;
   if(!motherId || !maleId || !matingDate){ toast('املأ كل البيانات'); return; }
+  pReset(); const fx = pphi(maleId, motherId);
+  if(fx>=0.0625 && !confirm('تنبيه: قرابة '+(fx*100).toFixed(1)+'% بين الذكر والأم. تكمل التلقيح؟')) return;
   DB.matings.push({
     id: uid(), motherId, maleId, matingDate,
     gisDate: addDays(matingDate,14), expectedBirth: addDays(matingDate,31),
@@ -1456,6 +1553,7 @@ function openMaleForm(existing){
       <select id="f_mbreed">${BREEDS.map(b=>`<option value="${b}" ${x.breed===b?'selected':''}>${b}</option>`).join('')}</select>
     </div>
     <div class="field"><label>تاريخ الميلاد</label><input id="f_mbirth" type="date" value="${x.birthDate||''}"></div>
+    ${parentSelects("f_m",x)}
     <div class="field-row">
       <div class="field"><label>رقم الخط</label><input id="f_mline" value="${x.line||''}" inputmode="numeric" pattern="[0-9]*" placeholder="مثال: 3"></div>
       <div class="field"><label>رقم العين</label><input id="f_mslot" value="${x.slot||''}" inputmode="numeric" pattern="[0-9]*" placeholder="مثال: 7"></div>
@@ -1494,10 +1592,10 @@ function saveMale(id){
   if(!name){ toast('اكتب اسم الذكر'); return; }
   if(id){
     const x = DB.males.find(y=>y.id===id);
-    x.name=name; x.birthDate=birthDate; x.breed=breed; x.line=line; x.slot=slot; x.photo = window._malePhotoData || x.photo || null;
+    x.name=name; x.birthDate=birthDate; x.breed=breed; x.line=line; x.slot=slot; x.photo = window._malePhotoData || x.photo || null; x.sireId=pv('f_msire'); x.damId=pv('f_mdam');
   } else {
     DB.males.push({
-      id:uid(), name, birthDate, breed, line, slot, photo: window._malePhotoData || null,
+      id:uid(), name, birthDate, breed, line, slot, photo: window._malePhotoData || null, sireId:pv('f_msire'), damId:pv('f_mdam'),
       matingCount:null, successRate:null, meds:[], nextTreatmentDate:null, nextTreatmentName:null
     });
   }
@@ -1506,7 +1604,7 @@ function saveMale(id){
 }
 function deleteMale(id){
   if(!confirm('متأكد إنك عايز تمسح الذكر ده؟')) return;
-  DB.males = DB.males.filter(x=>x.id!==id);
+  pArchive(id,'M'); DB.males = DB.males.filter(x=>x.id!==id);
   saveDB(); currentPage='males'; render();
 }
 
