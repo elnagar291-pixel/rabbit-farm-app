@@ -268,7 +268,7 @@ tr:last-child td{border-bottom:none;}
         </div>
         <div id="topbarActions"></div>
       </div>
-      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.8.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
+      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.8.1</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
     </div>
     <div id="content"></div>
   </main>
@@ -284,7 +284,7 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 /* ======================= DATA LAYER ======================= */
-const APP_VERSION = '4.8.0';
+const APP_VERSION = '4.8.1';
 const DB_KEY = 'rabbitFarmDB_v1';
 function loadDB(){
   try{
@@ -690,7 +690,7 @@ function pphi(a,b){
 function pF(id){ const r=_A[id]; return r?pphi(r.sireId,r.damId):0; }
 function pTag(x){ const c=x>=0.125?'#C0524A':x>=0.0625?'#C77B4A':'#2E7D5B'; return `<span style="background:${c};color:#fff;padding:2px 8px;border-radius:99px;font-size:12px;">F ${(x*100).toFixed(1)}%</span>`; }
 function pLbl(x){ return x>=0.125?'ممنوع - قرابة شديدة':x>=0.0625?'تحذير - قرابة':'آمن'; }
-function pName(a){ return (a.sex==='M'?'♂ ':'♀ ')+pesc(a.name)+(a.ext?' (خارج القطيع)':''); }
+function pName(a){ return (a.sex==='M'?'♂ ':'♀ ')+pesc(a.name)+(a.breed?' - '+pesc(a.breed):'')+(a.ext?' (خارج القطيع)':''); }
 function pOpts(sex,cur,ph,skip){
   return `<option value="">${ph}</option>`+Object.values(_A).filter(a=>a.sex===sex&&a.id!==skip).map(a=>`<option value="${a.id}" ${a.id===cur?'selected':''}>${pName(a)}</option>`).join('');
 }
