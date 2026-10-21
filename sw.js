@@ -1,4 +1,4 @@
-const CACHE_NAME = 'khair-tabeaa-v4.8.3';
+const CACHE_NAME = 'khair-tabeaa-v4.8.4';
 const CORE_ASSETS = ['./index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (event) => {

@@ -268,7 +268,7 @@ tr:last-child td{border-bottom:none;}
         </div>
         <div id="topbarActions"></div>
       </div>
-      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.8.3</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
+      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.8.4</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
     </div>
     <div id="content"></div>
   </main>
@@ -284,7 +284,7 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 /* ======================= DATA LAYER ======================= */
-const APP_VERSION = '4.8.3';
+const APP_VERSION = '4.8.4';
 const DB_KEY = 'rabbitFarmDB_v1';
 function loadDB(){
   try{
@@ -691,8 +691,9 @@ function pF(id){ const r=_A[id]; return r?pphi(r.sireId,r.damId):0; }
 function pTag(x){ const c=x>=0.125?'#C0524A':x>=0.0625?'#C77B4A':'#2E7D5B'; return `<span style="background:${c};color:#fff;padding:2px 8px;border-radius:99px;font-size:12px;">F ${(x*100).toFixed(1)}%</span>`; }
 function pLbl(x){ return x>=0.125?'ممنوع - قرابة شديدة':x>=0.0625?'تحذير - قرابة':'آمن'; }
 function pName(a){ return (a.sex==='M'?'♂ ':'♀ ')+pesc(a.name)+(a.breed?' - '+pesc(a.breed):'')+(a.ext?' (خارج القطيع)':''); }
+function pIsAnc(anc,id,seen){ if(!anc) return false; const r=_A[id]; if(!r) return false; return [r.sireId,r.damId].some(p=>p&&(p===anc||(!seen[p]&&(seen[p]=1,pIsAnc(anc,p,seen))))); }
 function pOpts(sex,cur,ph,skip){
-  return `<option value="">${ph}</option>`+Object.values(_A).filter(a=>a.sex===sex&&a.id!==skip).map(a=>`<option value="${a.id}" ${a.id===cur?'selected':''}>${pName(a)}</option>`).join('');
+  return `<option value="">${ph}</option>`+Object.values(_A).filter(a=>a.sex===sex&&a.id!==skip&&!pIsAnc(skip,a.id,{})).map(a=>`<option value="${a.id}" ${a.id===cur?'selected':''}>${pName(a)}</option>`).join('');
 }
 function parentSelects(pre,x){
   pReset();
@@ -728,6 +729,22 @@ function savePed(){
   DB.pedigree.push({id:uid(),name,sex:pv('f_psex'),breed:pv('f_pbreed'),sireId:pv('f_psire'),damId:pv('f_pdam'),source:pv('f_psrc').trim(),notes:pv('f_pnotes').trim()});
   saveDB(); closeModal(); render(); toast('تم الحفظ ✅');
 }
+function openPedEdit(id){
+  pReset(); const x=DB.pedigree.find(o=>o.id===id); if(!x) return;
+  const br=BREEDS.includes(x.breed)||!x.breed?BREEDS:BREEDS.concat([x.breed]);
+  openModal(`<h2>تعديل ${x.sex==='M'?'♂':'♀'} ${pesc(x.name)}</h2>
+  <div class="field"><label>الاسم / الرقم</label><input id="f_ename" value="${pesc(x.name)}"></div>
+  <div class="field"><label>السلالة</label><select id="f_ebreed">${br.map(b=>`<option value="${pesc(b)}" ${b===x.breed?'selected':''}>${pesc(b)}</option>`).join('')}</select></div>
+  ${parentSelects('f_e',x)}
+  <div class="field"><label>ملاحظات</label><textarea id="f_enotes" rows="2">${pesc(x.notes||'')}</textarea></div>
+  <div class="modal-actions"><button class="btn secondary" style="color:var(--danger)" onclick="closeModal();delPed('${x.id}')">🗑 حذف الأرنب</button><button class="btn" onclick="savePedEdit('${x.id}')">حفظ التعديل</button></div>`);
+}
+function savePedEdit(id){
+  const x=DB.pedigree.find(o=>o.id===id); if(!x) return;
+  const name=pv('f_ename').trim(); if(!name){ toast('اكتب الاسم'); return; }
+  x.name=name; x.breed=pv('f_ebreed'); x.sireId=pv('f_esire'); x.damId=pv('f_edam'); x.source=pv('f_esrc').trim(); x.notes=pv('f_enotes').trim();
+  saveDB(); closeModal(); render(); toast('تم الحفظ ✅');
+}
 function delPed(id){
   if(!confirm('حذف الأرنب ده من النسب؟')) return;
   DB.pedigree=DB.pedigree.filter(x=>x.id!==id);
@@ -751,7 +768,7 @@ function renderPedigree(){
     h+=`<div style="margin-top:8px;"><b>أحسن ذكور للأنثى المختارة</b>`+(c.length?c.map(o=>`<div class="alert-item"><div class="txt"><div>♂ ${pesc(o.m.name)} <small>${pesc(o.m.breed||'')}</small></div></div>${pTag(o.x)}</div>`).join(''):'<div class="empty">مفيش ذكور مسجلة</div>')+`</div>`;
   }
   h+='</div>';
-  h+=`<div class="section"><div class="section-title">📜 أجداد وأرانب خارج القطيع</div>`+(DB.pedigree.length?DB.pedigree.map(x=>`<div class="alert-item"><div class="txt"><div>${x.sex==='M'?'♂':'♀'} <b>${pesc(x.name)}</b> <small>${pesc(x.breed||'')}${x.archived?' · محذوف من القطيع':''}${x.source?' · 🏠 '+pesc(x.source):''}</small></div>${x.notes?`<div style="font-size:12px;color:var(--muted);margin-top:3px;">📝 ${pesc(x.notes)}</div>`:''}</div><button class="btn small secondary" onclick="delPed('${x.id}')">حذف</button></div>`).join(''):'<div class="empty">مفيش أجداد مسجلين. اضغط + إضافة</div>')+'</div>';
+  h+=`<div class="section"><div class="section-title">📜 أجداد وأرانب خارج القطيع</div>`+(DB.pedigree.length?DB.pedigree.map(x=>`<div class="alert-item"><div class="txt"><div>${x.sex==='M'?'♂':'♀'} <b>${pesc(x.name)}</b> <small>${pesc(x.breed||'')}${x.archived?' · محذوف من القطيع':''}${x.source?' · 🏠 '+pesc(x.source):''}</small></div>${x.notes?`<div style="font-size:12px;color:var(--muted);margin-top:3px;">📝 ${pesc(x.notes)}</div>`:''}</div><button class="btn small secondary" onclick="openPedEdit('${x.id}')">تعديل</button></div>`).join(''):'<div class="empty">مفيش أجداد مسجلين. اضغط + إضافة</div>')+'</div>';
   return h;
 }
 
