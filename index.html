@@ -268,7 +268,7 @@ tr:last-child td{border-bottom:none;}
         </div>
         <div id="topbarActions"></div>
       </div>
-      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.8.6</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
+      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.8.7</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
     </div>
     <div id="content"></div>
   </main>
@@ -284,7 +284,7 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 /* ======================= DATA LAYER ======================= */
-const APP_VERSION = '4.8.6';
+const APP_VERSION = '4.8.7';
 const DB_KEY = 'rabbitFarmDB_v1';
 function loadDB(){
   try{
@@ -2193,6 +2193,18 @@ setInterval(checkAndPlayAlertSound, 3*60*1000);
 /* ======================= INIT ======================= */
 render();
 try{ history.pushState({navGuard:true}, ''); }catch(e){}
+// كروم بيتخطى حالات الرجوع اللي اتضافت من غير لمس الشاشة، فبنضيف حالة تانية عند أول لمسة
+(function(){
+  let done=false;
+  function guard(){
+    if(done) return; done=true;
+    try{ history.pushState({navGuard:true}, ''); }catch(e){}
+    document.removeEventListener('click',guard,true);
+    document.removeEventListener('touchend',guard,true);
+  }
+  document.addEventListener('click',guard,true);
+  document.addEventListener('touchend',guard,true);
+})();
 </script>
 
 <script>
