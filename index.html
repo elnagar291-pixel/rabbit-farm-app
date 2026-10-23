@@ -268,7 +268,7 @@ tr:last-child td{border-bottom:none;}
         </div>
         <div id="topbarActions"></div>
       </div>
-      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.8.7</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
+      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.8.8</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
     </div>
     <div id="content"></div>
   </main>
@@ -284,7 +284,7 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 /* ======================= DATA LAYER ======================= */
-const APP_VERSION = '4.8.7';
+const APP_VERSION = '4.8.8';
 const DB_KEY = 'rabbitFarmDB_v1';
 function loadDB(){
   try{
@@ -1798,7 +1798,7 @@ function renderFattening(){
   if(DB.fattening.length===0) return `<div class="empty">لسه مفيش دفعات تسمين مسجلة.</div>`;
   const groups = groupByLocation(DB.fattening);
   const rows = groups.map(g=>{
-    const headerRow = `<tr><td colspan="7" style="background:var(--primary-tint);color:var(--primary-dark);font-weight:800;font-size:12px;">📍 ${g.line!==null ? 'خط '+g.line : 'بدون خط محدد'}</td></tr>`;
+    const headerRow = `<tr><td colspan="6" style="background:var(--primary-tint);color:var(--primary-dark);font-weight:800;font-size:12px;">📍 ${g.line!==null ? 'خط '+g.line : 'بدون خط محدد'}</td></tr>`;
     const itemRows = g.items.map(f=>{
       const total = fatTotal(f);
       const sold = parseInt(f.soldCount)||0;
@@ -1821,14 +1821,13 @@ function renderFattening(){
           <td>${remainingTxt}${soldBtn}</td>
           <td>${fatSlotTxt(f)}</td>
           <td>${f.birthDate ? fmtDate(f.birthDate)+`<div style="font-size:12px;color:var(--primary-dark);font-weight:700;margin-top:3px;">عمرهم ${Math.max(0,-daysUntil(f.birthDate))} يوم</div>` : '—'}</td>
-          <td>${f.saleAlertDate?fmtDate(f.saleAlertDate):'—'}${saleNear && remaining>0?' 🔔':''}</td>
           <td><button class="btn small secondary" style="white-space:nowrap;" onclick="openFatteningEdit('${f.id}')">✏️ تعديل</button></td>
         </tr>`;
     }).join('');
     return headerRow + itemRows;
   }).join('');
   return `<div class="table-wrap"><table>
-    <thead><tr><th>الدفعة</th><th>العدد</th><th>الباقي</th><th>الموقع</th><th>تاريخ الميلاد والعمر</th><th>ميعاد البيع المتوقع</th><th></th></tr></thead>
+    <thead><tr><th>الدفعة</th><th>العدد</th><th>الباقي</th><th>الموقع</th><th>تاريخ الميلاد والعمر</th><th></th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
 }
 /* صفحة تعديل الدفعة: بياناتها + تسجيل البيع + الحذف */
