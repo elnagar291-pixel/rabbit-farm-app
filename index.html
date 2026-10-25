@@ -268,7 +268,7 @@ tr:last-child td{border-bottom:none;}
         </div>
         <div id="topbarActions"></div>
       </div>
-      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.8.8</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
+      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.8.9</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
     </div>
     <div id="content"></div>
   </main>
@@ -284,7 +284,7 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 /* ======================= DATA LAYER ======================= */
-const APP_VERSION = '4.8.8';
+const APP_VERSION = '4.8.9';
 const DB_KEY = 'rabbitFarmDB_v1';
 function loadDB(){
   try{
@@ -434,7 +434,16 @@ function importBackup(input){
 }
 
 /* Gestation default for rabbits ~31 days */
-const GESTATION_DAYS = 31;
+const GESTATION_DAYS = 30;
+function birthCountdown(dd){
+  if(dd>2) return `باقي ${dd} أيام على الولادة`;
+  if(dd===2) return 'باقي يومين على الولادة';
+  if(dd===1) return 'باقي يوم واحد على الولادة';
+  if(dd===0) return 'ميعاد الولادة النهارده';
+  return `متأخر ${-dd} يوم عن ميعاد الولادة`;
+}
+// فترة الحمل ٣٠ يوم: تحديث الدورات الجارية
+DB.matings.forEach(mt=>{ if(mt.matingDate && !mt.actualBirthDate && !mt.converted) mt.expectedBirth = addDays(mt.matingDate, GESTATION_DAYS); });
 const BREEDS = ['غير محدد','بلدي','خليط','نيوزلندي','ركس','جبلي','بلجيكي','فلاندر','مشتهر','بوسكات','بفرين','هولندي','دوتش','فيلاين','اسكندرية','شنشلا','بابيون','كاليفورنيا','هايبلس','أسد','هارلي'];
 
 /* ======================= NAV ======================= */
@@ -497,7 +506,6 @@ function getUpcomingAlerts(){
   DB.mothers.forEach(m=>{
     const checks = [
       {key:'gisDate', label:'ميعاد الجس', ico:'🩺'},
-      {key:'expectedBirth', label:'الميعاد المتوقع للولادة', ico:'🍼'},
       {key:'weanDate', label:'ميعاد الفطام', ico:'🌾'},
       {key:'nextMatingDate', label:'ميعاد التلقيح القادم', ico:'❤️'},
       {key:'nextTreatmentDate', label:'ميعاد العلاج القادم', ico:'💊'},
@@ -511,13 +519,6 @@ function getUpcomingAlerts(){
         alerts.push({motherId:m.id, motherName:nameWithBreed(m), label, ico:c.ico, date:val, days:dd});
       }
     });
-    if(m.expectedBirth){
-      const prepDate = addDays(m.expectedBirth, -5);
-      const dd = daysUntil(prepDate);
-      if(dd!==null && dd<=1){
-        alerts.push({motherId:m.id, motherName:nameWithBreed(m), label:'جهّز بيت الولادة', ico:'🏠', date:prepDate, days:dd});
-      }
-    }
   });
   DB.males.forEach(mm=>{
     if(mm.nextTreatmentDate){
@@ -544,19 +545,11 @@ function getUpcomingAlerts(){
           alerts.push({motherId:mt.id, motherName:momName, label:'ميعاد الجس', ico:'🩺', date:mt.gisDate, days:dd, isMating:true});
         }
       }
-      // الخطوة ٢: تنبيه تجهيز بيت الولادة (بعد ما الجس يبقى إيجابي بس)
-      else if(mt.gisResult==='positive' && !mt.nestPrepDone && mt.expectedBirth){
-        const prepDate = addDays(mt.expectedBirth,-5);
-        const dd = daysUntil(prepDate);
-        if(dd!==null && dd<=1){
-          alerts.push({motherId:mt.id, motherName:momName, label:'جهّز بيت الولادة', ico:'🏠', date:prepDate, days:dd, isMating:true, isNestPrep:true});
-        }
-      }
-      // الخطوة ٣: تنبيه الميعاد المتوقع للولادة (بعد ما تجهّز بيت الولادة)
-      else if(mt.gisResult==='positive' && mt.nestPrepDone && mt.expectedBirth){
+      // تنبيه العد التنازلي للولادة: من قبلها بـ٥ أيام
+      if(mt.expectedBirth && mt.gisResult!=='negative'){
         const dd = daysUntil(mt.expectedBirth);
-        if(dd!==null && dd<=1){
-          alerts.push({motherId:mt.id, motherName:momName, label:'الميعاد المتوقع للولادة', ico:'🍼', date:mt.expectedBirth, days:dd, isMating:true});
+        if(dd!==null && dd<=5){
+          alerts.push({motherId:mt.id, motherName:momName, label:birthCountdown(dd)+(mt.nestPrepDone?'':' · جهّز بيت الولادة'), ico:'🍼', date:mt.expectedBirth, days:dd, isMating:true, isBirth:true, isNestPrep:!mt.nestPrepDone});
         }
       }
     } else {
@@ -801,7 +794,7 @@ function renderDashboard(){
     alertsHtml = `<div class="empty">مفيش تنبيهات قريبة دلوقتي 🌿</div>`;
   } else {
     alertsHtml = alerts.map(a=>{
-      const statusTxt = a.days<0 ? `متأخر ${Math.abs(a.days)} يوم` : a.days===0 ? 'النهاردة' : `بعد ${a.days} يوم`;
+      const statusTxt = a.isBirth ? 'الولادة المتوقعة' : a.days<0 ? `متأخر ${Math.abs(a.days)} يوم` : a.days===0 ? 'النهاردة' : `بعد ${a.days} يوم`;
       return `
       <div class="alert-item">
         <div class="ico">${a.ico}</div>
@@ -1182,7 +1175,7 @@ function saveMotherField(id, key){
   m[key] = val;
   if(key==='matingDate' && val){
     m.gisDate = addDays(val, 14);
-    m.expectedBirth = addDays(val, 30);
+    m.expectedBirth = addDays(val, GESTATION_DAYS);
   }
   if(key==='actualBirthDate' && val){
     m.weanDate = addDays(val, 35);
@@ -1282,7 +1275,7 @@ function openMatingForm(prefillMotherId, prefillMaleId){
       <label>تاريخ التلقيح</label>
       <input id="f_matDate" type="date" value="${todayISO()}">
     </div>
-    <p class="sub">هيتحدد تلقائيًا: ميعاد الجس (+١٤ يوم) والميعاد المتوقع للولادة (+٣١ يوم).</p>
+    <p class="sub">هيتحدد تلقائيًا: ميعاد الجس (+١٤ يوم) والولادة (+٣٠ يوم) وهيجيلك تنبيه قبلها بـ٥ أيام.</p>
     <div class="modal-actions">
       <button class="btn secondary" onclick="closeModal()">إلغاء</button>
       <button class="btn" onclick="saveMating()">تسجيل</button>
@@ -1298,7 +1291,7 @@ function saveMating(){
   if(fx>=0.0625 && !confirm('تنبيه: قرابة '+(fx*100).toFixed(1)+'% بين الذكر والأم. تكمل التلقيح؟')) return;
   DB.matings.push({
     id: uid(), motherId, maleId, matingDate,
-    gisDate: addDays(matingDate,14), expectedBirth: addDays(matingDate,31),
+    gisDate: addDays(matingDate,14), expectedBirth: addDays(matingDate,GESTATION_DAYS),
     gisResult:null, failed:false,
     actualBirthDate:null, birthCount:null,
     weanDate:null, weanCount:null,
@@ -1386,7 +1379,6 @@ function renderMatingDetail(mt){
     {key:'gisDate', label:'ميعاد الجس (تلقائي)', type:'date'},
   ]);
   const lateRows = renderRows([
-    {key:'expectedBirth', label:'الميعاد المتوقع للولادة (تلقائي)', type:'date'},
     {key:'actualBirthDate', label:'تاريخ الولادة الفعلي', type:'date'},
     {key:'birthCount', label:'عدد الأولاد المولودين', type:'number'},
   ]);
@@ -1507,7 +1499,7 @@ function saveMatingField(id, key){
   mt[key] = val;
   if(key==='matingDate' && val){
     mt.gisDate = addDays(val,14);
-    mt.expectedBirth = addDays(val,31);
+    mt.expectedBirth = addDays(val,GESTATION_DAYS);
   }
   saveDB(); closeModal(); openMatingDetail(id);
   toast('اتحفظ ✅');
