@@ -268,7 +268,7 @@ tr:last-child td{border-bottom:none;}
         </div>
         <div id="topbarActions"></div>
       </div>
-      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.8.9</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
+      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.9.1</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
     </div>
     <div id="content"></div>
   </main>
@@ -284,7 +284,7 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 /* ======================= DATA LAYER ======================= */
-const APP_VERSION = '4.8.9';
+const APP_VERSION = '4.9.1';
 const DB_KEY = 'rabbitFarmDB_v1';
 function loadDB(){
   try{
@@ -698,9 +698,14 @@ function parentSelects(pre,x){
   <div class="field"><label>🏠 المزرعة / المصدر (لو الأب والأم مجهولين)</label><input id="${pre}src" list="farmList" value="${pesc(x.source||'')}" placeholder="اسم المزرعة اللي جبته منها"><datalist id="farmList">${pFarms().map(f=>`<option value="${pesc(f)}">`).join('')}</datalist></div>`;
 }
 function pFarms(){ const o={}; [].concat(DB.males,DB.mothers,DB.pedigree).forEach(a=>{ if(a.source) o[a.source]=1; }); return Object.keys(o); }
+function delMaleName(id){ const p=(DB.pedigree||[]).find(x=>x.id===id); return p ? pesc(p.name)+' (محذوف)' : 'ذكر محذوف'; }
+function delMotherName(id){ const p=(DB.pedigree||[]).find(x=>x.id===id); return p ? pesc(p.name)+' (محذوفة)' : 'أم محذوفة'; }
+function openDeletedMother(id){ if(id && DB.pedigree.some(x=>x.id===id)) openPedEdit(id); }
+function exclNote(mom,male){ if(mom&&male) return ''; return `<div style="font-size:12px;color:var(--danger);font-weight:700;margin-top:2px;">⛔ تم استبعاد ${!mom&&!male?'الأم والذكر':!mom?'الأم':'الذكر'}</div>`; }
+function openDeletedMale(id){ if(!id) return; if(DB.pedigree.some(x=>x.id===id)) openPedEdit(id); else openPedForm(id); }
 function pArchive(id,sex){
   const list = sex==='M'?DB.males:DB.mothers; const x=list.find(y=>y.id===id); if(!x) return;
-  const used=[].concat(DB.males,DB.mothers,DB.pedigree).some(o=>o.sireId===id||o.damId===id);
+  const used=[].concat(DB.males,DB.mothers,DB.pedigree).some(o=>o.sireId===id||o.damId===id) || DB.matings.some(mt=>mt.maleId===id||mt.motherId===id);
   if(used) DB.pedigree.push({id:x.id,name:x.name,sex,breed:x.breed,notes:x.notes||'',source:x.source||'',sireId:x.sireId||'',damId:x.damId||'',archived:true});
 }
 function pNode(id,d){
@@ -710,19 +715,19 @@ function pNode(id,d){
   if(!ch && !(r.sireId||r.damId) && r.source) ch=`<div class="pch"><div class="pn"><div class="pb u">🏠 ${pesc(r.source)}</div></div></div>`;
   return `<div class="pn"><div class="pb ${r.sex}">${pesc(r.name)}<small>${pesc(r.breed||'')}</small></div>${ch}</div>`;
 }
-function openPedForm(){
+function openPedForm(preId){
   pReset();
-  openModal(`<h2>إضافة أرنب للنسب</h2><p class="sub">للأجداد أو أي أرنب مش في القطيع دلوقتي</p>
+  openModal(`<h2>${preId?'تسجيل الذكر المحذوف':'إضافة أرنب للنسب'}</h2><p class="sub">${preId?'سجّل بياناته عشان تفتكر أصل الخلفة':'للأجداد أو أي أرنب مش في القطيع دلوقتي'}</p>
   <div class="field"><label>الاسم / الرقم</label><input id="f_pname"></div>
-  <div class="field"><label>الجنس</label><select id="f_psex"><option value="M">ذكر</option><option value="F">أنثى</option></select></div>
+  <div class="field"><label>الجنس</label><select id="f_psex"><option value="M">ذكر</option><option value="F" ${preId?'disabled':''}>أنثى</option></select></div>
   <div class="field"><label>السلالة</label><select id="f_pbreed">${BREEDS.map(b=>`<option value="${b}">${b}</option>`).join('')}</select></div>
   ${parentSelects('f_p',{})}
   <div class="field"><label>ملاحظات / المزرعة اللي جه منها</label><input id="f_pnotes" placeholder="مثال: من مزرعة ..."></div>
-  <div class="modal-actions"><button class="btn secondary" onclick="closeModal()">إلغاء</button><button class="btn" onclick="savePed()">إضافة</button></div>`);
+  <div class="modal-actions"><button class="btn secondary" onclick="closeModal()">إلغاء</button><button class="btn" onclick="savePed('${preId||''}')">${preId?'حفظ':'إضافة'}</button></div>`);
 }
-function savePed(){
+function savePed(preId){
   const name=pv('f_pname').trim(); if(!name){ toast('اكتب الاسم'); return; }
-  DB.pedigree.push({id:uid(),name,sex:pv('f_psex'),breed:pv('f_pbreed'),sireId:pv('f_psire'),damId:pv('f_pdam'),source:pv('f_psrc').trim(),notes:pv('f_pnotes').trim()});
+  DB.pedigree.push({id:preId||uid(),name,sex:pv('f_psex'),breed:pv('f_pbreed'),sireId:pv('f_psire'),damId:pv('f_pdam'),source:pv('f_psrc').trim(),notes:pv('f_pnotes').trim()});
   saveDB(); closeModal(); render(); toast('تم الحفظ ✅');
 }
 function openPedEdit(id){
@@ -942,7 +947,7 @@ function saveMother(id){
   toast('تم الحفظ ✅');
 }
 function deleteMother(id){
-  if(!confirm('متأكد إنك عايز تمسح الأم دي؟')) return;
+  if(!confirm('متأكد إنك عايز تمسح الأم دي؟ هتفضل في صفحة التلقيح مكتوب عليها "تم الاستبعاد".')) return;
   pArchive(id,'F'); DB.mothers = DB.mothers.filter(m=>m.id!==id);
   saveDB(); currentPage='mothers'; render();
 }
@@ -977,8 +982,8 @@ function renderMotherDetail(m){
         <div class="mini-link-row" onclick="openMatingDetail('${mt.id}')">
           <div class="avatar" ${avatar}>${male && male.photo ? '' : '♂️'}</div>
           <div style="flex:1;">
-            <div style="font-weight:800;font-size:14.5px;">${male ? male.name : 'ذكر محذوف'}</div>
-            <div style="font-size:12.5px;color:var(--muted);">${fmtDate(mt.matingDate)} · ${stageLabel}</div>
+            <div style="font-weight:800;font-size:14.5px;">${male ? male.name : delMaleName(mt.maleId)}</div>
+            <div style="font-size:12.5px;color:var(--muted);">${fmtDate(mt.matingDate)} · ${stageLabel}</div>${exclNote(true,male)}
           </div>
         </div>`;
       }).join('');
@@ -1240,8 +1245,8 @@ function renderMatingsList(){
     <div class="mother-row" onclick="openMatingDetail('${mt.id}')">
       <div class="mother-row-photo" ${photo}>${mom && mom.photo ? '' : '🐇'}</div>
       <div class="mother-row-info">
-        <div class="mother-row-name">${mom ? mom.name : 'أم محذوفة'}${momBreed ? ` <span style="font-weight:600;font-size:14px;color:var(--muted);">· ${momBreed}</span>` : ''} <span style="font-weight:600;font-size:14px;color:var(--muted);">× ${male ? male.name : 'ذكر محذوف'}</span></div>
-        <div class="mother-row-meta">${fmtDate(mt.matingDate)} · <span class="status-chip ${stage.cls}">${stage.label}</span></div>
+        <div class="mother-row-name">${mom ? mom.name : delMotherName(mt.motherId)}${momBreed ? ` <span style="font-weight:600;font-size:14px;color:var(--muted);">· ${momBreed}</span>` : ''} <span style="font-weight:600;font-size:14px;color:var(--muted);">× ${male ? male.name : delMaleName(mt.maleId)}</span></div>
+        <div class="mother-row-meta">${fmtDate(mt.matingDate)} · <span class="status-chip ${stage.cls}">${stage.label}</span></div>${exclNote(mom,male)}
       </div>
     </div>`;
   }).join('');
@@ -1458,13 +1463,13 @@ function renderMatingDetail(mt){
   return `
     <div class="section" style="margin-top:0;">
       <div style="display:flex;gap:14px;">
-        <div class="mini-link-row" style="flex:1;cursor:pointer;" onclick="${mom?`openMotherDetail('${mom.id}')`:''}">
+        <div class="mini-link-row" style="flex:1;cursor:pointer;" onclick="${mom?`openMotherDetail('${mom.id}')`:`openDeletedMother('${mt.motherId}')`}">
           <div class="avatar" ${momPhoto}>${mom && mom.photo ? '' : '🐇'}</div>
-          <div><div style="font-weight:800;">${mom?mom.name:'أم محذوفة'}</div><div style="font-size:12px;color:var(--muted);">الأم</div></div>
+          <div><div style="font-weight:800;">${mom?mom.name:delMotherName(mt.motherId)}</div><div style="font-size:12px;color:${mom?'var(--muted)':'var(--danger)'};">${mom?'الأم':'الأم · ⛔ تم الاستبعاد'}</div></div>
         </div>
-        <div class="mini-link-row" style="flex:1;cursor:pointer;" onclick="${male?`openMaleDetail('${male.id}')`:''}">
+        <div class="mini-link-row" style="flex:1;cursor:pointer;" onclick="${male?`openMaleDetail('${male.id}')`:`openDeletedMale('${mt.maleId}')`}">
           <div class="avatar" ${malePhoto}>${male && male.photo ? '' : '♂️'}</div>
-          <div><div style="font-weight:800;">${male?male.name:'ذكر محذوف'}</div><div style="font-size:12px;color:var(--muted);">الذكر</div></div>
+          <div><div style="font-weight:800;">${male?male.name:delMaleName(mt.maleId)}</div><div style="font-size:12px;color:${male?'var(--muted)':'var(--danger)'};">${male?'الذكر':(DB.pedigree.some(x=>x.id===mt.maleId)?'الذكر · ⛔ تم الاستبعاد':'الذكر · ⛔ تم الاستبعاد · اضغط لتسجيل بياناته')}</div></div>
         </div>
       </div>
     </div>
@@ -1620,7 +1625,7 @@ function saveMale(id){
   toast('تم الحفظ ✅');
 }
 function deleteMale(id){
-  if(!confirm('متأكد إنك عايز تمسح الذكر ده؟')) return;
+  if(!confirm('متأكد إنك عايز تمسح الذكر ده؟ هيفضل في صفحة التلقيح مكتوب عليه "تم الاستبعاد".')) return;
   pArchive(id,'M'); DB.males = DB.males.filter(x=>x.id!==id);
   saveDB(); currentPage='males'; render();
 }
