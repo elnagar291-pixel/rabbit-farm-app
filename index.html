@@ -268,7 +268,7 @@ tr:last-child td{border-bottom:none;}
         </div>
         <div id="topbarActions"></div>
       </div>
-      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.9.1</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
+      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.9.2</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
     </div>
     <div id="content"></div>
   </main>
@@ -284,7 +284,7 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 /* ======================= DATA LAYER ======================= */
-const APP_VERSION = '4.9.1';
+const APP_VERSION = '4.9.2';
 const DB_KEY = 'rabbitFarmDB_v1';
 function loadDB(){
   try{
@@ -1782,7 +1782,7 @@ function fatLabel(f){
   if(f.motherId){
     const mom = DB.mothers.find(x=>x.id===f.motherId);
     const male = DB.males.find(x=>x.id===f.maleId);
-    return `${mom?mom.name:'—'} × ${male?male.name:'—'}`;
+    return `${mom?mom.name:delMotherName(f.motherId)} × ${male?male.name:delMaleName(f.maleId)}`;
   }
   return f.name || 'دفعة';
 }
@@ -1805,11 +1805,15 @@ function renderFattening(){
       const soldBtn = `<br><button class="btn small secondary" style="min-width:92px;white-space:nowrap;margin-top:4px;" onclick="editFatteningSold('${f.id}')">تسجيل بيع</button>`;
       let nameCell = fatLabel(f);
       if(f.motherId){
-        const mom = DB.mothers.find(x=>x.id===f.motherId);
-        const male = DB.males.find(x=>x.id===f.maleId);
+        const liveMom = DB.mothers.find(x=>x.id===f.motherId);
+        const liveMale = DB.males.find(x=>x.id===f.maleId);
+        const mom = liveMom || DB.pedigree.find(x=>x.id===f.motherId);
+        const male = liveMale || DB.pedigree.find(x=>x.id===f.maleId);
         const momBreed = mom && mom.breed && mom.breed!=='غير محدد' ? mom.breed : '';
         const maleBreed = male && male.breed && male.breed!=='غير محدد' ? male.breed : '';
         if(momBreed||maleBreed) nameCell += `<div style="font-size:11px;color:var(--muted);margin-top:2px;">${momBreed||'—'} × ${maleBreed||'—'}</div>`;
+        if(f.maleId && !liveMale) nameCell += `<div style="font-size:11px;color:var(--danger);margin-top:2px;">⛔ الأب تم استبعاده${male?'':` · <u style="color:var(--primary-dark);" onclick="openDeletedMale('${f.maleId}')">سجّل بياناته</u>`}</div>`;
+        if(!liveMom) nameCell += `<div style="font-size:11px;color:var(--danger);margin-top:2px;">⛔ الأم تم استبعادها</div>`;
       }
       return `
         <tr>
