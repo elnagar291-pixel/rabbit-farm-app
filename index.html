@@ -268,7 +268,7 @@ tr:last-child td{border-bottom:none;}
         </div>
         <div id="topbarActions"></div>
       </div>
-      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.9.3</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
+      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.9.4</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
     </div>
     <div id="content"></div>
   </main>
@@ -284,7 +284,7 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 /* ======================= DATA LAYER ======================= */
-const APP_VERSION = '4.9.3';
+const APP_VERSION = '4.9.4';
 const DB_KEY = 'rabbitFarmDB_v1';
 function loadDB(){
   try{
@@ -977,15 +977,15 @@ function renderMotherDetail(m){
     ? `<div class="empty" style="padding:20px;">لسه مفيش تلقيح مسجل لهذه الأم.</div>`
     : myMatings.map(mt=>{
         const male = DB.males.find(x=>x.id===mt.maleId);
-        const stageLabel = mt.converted ? 'اتفطمت وتحولت للتسمين ✅' : (mt.actualBirthDate ? `معاها فطام · عمرهم ${litterAgeDays(mt)} يوم` : (mt.matingDate ? 'حامل - تحت المتابعة' : ''));
+        const stageLabel = mt.failed ? (matingSuperseded(mt) ? '❌ الجس سلبي' : '❌ الجس سلبي - محتاج تلقيح جديد') : mt.converted ? 'اتفطمت وتحولت للتسمين ✅' : (mt.actualBirthDate ? `معاها فطام · عمرهم ${litterAgeDays(mt)} يوم` : (mt.matingDate ? 'حامل - تحت المتابعة' : ''));
         const avatar = male && male.photo ? `style="background-image:url('${male.photo}')"` : '';
         return `
-        <div class="mini-link-row" onclick="openMatingDetail('${mt.id}')">
+        <div class="mini-link-row" onclick="openMatingDetail('${mt.id}')" style="${mt.failed?'border:2px solid var(--danger);background:#FDF1EF;':''}">
           <div class="avatar" ${avatar}>${male && male.photo ? '' : '♂️'}</div>
           <div style="flex:1;">
             <div style="font-weight:800;font-size:14.5px;">${male ? male.name : delMaleName(mt.maleId)}</div>
-            <div style="font-size:12.5px;color:var(--muted);">${fmtDate(mt.matingDate)} · ${stageLabel}</div>${exclNote(true,male)}
-          </div>
+            <div style="font-size:12.5px;color:${mt.failed?'var(--danger)':'var(--muted)'};${mt.failed?'font-weight:700;':''}">${fmtDate(mt.matingDate)} · ${stageLabel}</div>${exclNote(true,male)}
+          </div>${mt.failed?'<span style="background:var(--danger);color:#fff;padding:4px 10px;border-radius:99px;font-size:12px;font-weight:800;white-space:nowrap;">❌ سلبي</span>':''}
         </div>`;
       }).join('');
 
