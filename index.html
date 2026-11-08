@@ -268,7 +268,7 @@ tr:last-child td{border-bottom:none;}
         </div>
         <div id="topbarActions"></div>
       </div>
-      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.9.2</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
+      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.9.3</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
     </div>
     <div id="content"></div>
   </main>
@@ -284,7 +284,7 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 /* ======================= DATA LAYER ======================= */
-const APP_VERSION = '4.9.2';
+const APP_VERSION = '4.9.3';
 const DB_KEY = 'rabbitFarmDB_v1';
 function loadDB(){
   try{
@@ -534,7 +534,7 @@ function getUpcomingAlerts(){
     const mom = DB.mothers.find(x=>x.id===mt.motherId);
     const momName = mom ? nameWithBreed(mom) : 'أم';
     if(mt.failed){
-      alerts.push({motherId:mt.id, motherName:momName, label:'الجس سلبي - محتاج تلقيح جديد', ico:'❌', date:mt.gisDate, days:-999, isMating:true});
+      if(!matingSuperseded(mt)) alerts.push({motherId:mt.id, motherName:momName, label:'الجس سلبي - محتاج تلقيح جديد', ico:'❌', date:mt.gisDate, days:-999, isMating:true});
       return;
     }
     if(!mt.actualBirthDate){
@@ -698,6 +698,7 @@ function parentSelects(pre,x){
   <div class="field"><label>🏠 المزرعة / المصدر (لو الأب والأم مجهولين)</label><input id="${pre}src" list="farmList" value="${pesc(x.source||'')}" placeholder="اسم المزرعة اللي جبته منها"><datalist id="farmList">${pFarms().map(f=>`<option value="${pesc(f)}">`).join('')}</datalist></div>`;
 }
 function pFarms(){ const o={}; [].concat(DB.males,DB.mothers,DB.pedigree).forEach(a=>{ if(a.source) o[a.source]=1; }); return Object.keys(o); }
+function matingSuperseded(mt){ return !!mt.failed && DB.matings.some(o=>o.id!==mt.id && o.motherId===mt.motherId && (o.matingDate||'')>(mt.matingDate||'')); }
 function delMaleName(id){ const p=(DB.pedigree||[]).find(x=>x.id===id); return p ? pesc(p.name)+' (محذوف)' : 'ذكر محذوف'; }
 function delMotherName(id){ const p=(DB.pedigree||[]).find(x=>x.id===id); return p ? pesc(p.name)+' (محذوفة)' : 'أم محذوفة'; }
 function openDeletedMother(id){ if(id && DB.pedigree.some(x=>x.id===id)) openPedEdit(id); }
@@ -1230,7 +1231,7 @@ function matingStageLabel(mt){
 }
 
 function renderMatingsList(){
-  const activeMatings = DB.matings.filter(mt=>!mt.converted);
+  const activeMatings = DB.matings.filter(mt=>!mt.converted && !matingSuperseded(mt));
   if(activeMatings.length===0){
     return `<div class="empty">${DB.matings.length===0 ? 'لسه مفيش عمليات تلقيح مسجلة. دوس "تسجيل تلقيح جديد" عشان تبدأ.' : 'مفيش تلقيحات شغالة دلوقتي. اللي اتفطمت موجودة في صفحة التسمين.'}</div>`;
   }
