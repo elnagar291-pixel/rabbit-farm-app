@@ -268,7 +268,7 @@ tr:last-child td{border-bottom:none;}
         </div>
         <div id="topbarActions"></div>
       </div>
-      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.9.4</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
+      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.9.5</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
     </div>
     <div id="content"></div>
   </main>
@@ -284,7 +284,7 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 /* ======================= DATA LAYER ======================= */
-const APP_VERSION = '4.9.4';
+const APP_VERSION = '4.9.5';
 const DB_KEY = 'rabbitFarmDB_v1';
 function loadDB(){
   try{
@@ -1822,7 +1822,7 @@ function renderFattening(){
           <td>${total||'—'}${f.weanWeight?`<div style="font-size:11px;color:var(--muted);margin-top:2px;">${f.weanWeight} جم</div>`:''}</td>
           <td>${remainingTxt}${soldBtn}</td>
           <td>${fatSlotTxt(f)}</td>
-          <td>${f.birthDate ? fmtDate(f.birthDate)+`<div style="font-size:12px;color:var(--primary-dark);font-weight:700;margin-top:3px;">عمرهم ${Math.max(0,-daysUntil(f.birthDate))} يوم</div>` : '—'}</td>
+          <td>${f.birthDate ? fmtDate(f.birthDate)+`<div style="font-size:12px;color:var(--primary-dark);font-weight:700;margin-top:3px;">عمرهم ${Math.max(0,-daysUntil(f.birthDate))} يوم</div>` : '—'}${fatLastRateHtml(f)}</td>
           <td><button class="btn small secondary" style="white-space:nowrap;" onclick="openFatteningEdit('${f.id}')">✏️ تعديل</button></td>
         </tr>`;
     }).join('');
@@ -1831,6 +1831,66 @@ function renderFattening(){
   return `<div class="table-wrap"><table>
     <thead><tr><th>الدفعة</th><th>العدد</th><th>الباقي</th><th>الموقع</th><th>تاريخ الميلاد والعمر</th><th></th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
+}
+
+/* ======================= أوزان التسمين ومعدل التحويل ======================= */
+function fatRates(f){
+  const bd=f.birthDate;
+  return (f.weights||[]).slice().sort((a,b)=>a.date.localeCompare(b.date)).map(x=>{
+    const age=bd?Math.round((new Date(x.date)-new Date(bd))/86400000):null;
+    return {date:x.date,w:Number(x.w),age:age,rate:(age&&age>0)?Number(x.w)/age:null};
+  });
+}
+function fatTrendTag(d){
+  if(d==null) return '';
+  if(Math.abs(d)<0.05) return '<span style="color:var(--muted);font-weight:700;">■ ثابت</span>';
+  return d>0 ? `<span style="color:#2E7D5B;font-weight:800;">▲ +${d.toFixed(1)}</span>` : `<span style="color:var(--danger);font-weight:800;">▼ ${d.toFixed(1)}</span>`;
+}
+function fatWeightsHtml(f){
+  const target=parseFloat(f.targetRate)||30;
+  const list=fatRates(f);
+  if(!list.length) return '<div style="color:var(--muted);font-size:13px;padding:6px 0;">لسه ما سجلتش أوزان.</div>';
+  const withRate=list.filter(x=>x.rate!=null);
+  let sum='';
+  if(withRate.length>=2){
+    const d=withRate[withRate.length-1].rate-withRate[withRate.length-2].rate;
+    sum=`<div style="font-weight:800;margin:6px 0;color:${d>=0?'#2E7D5B':'var(--danger)'};">${d>=0?'📈 المعدل في تزايد':'📉 المعدل في تناقص'} (${d>=0?'+':''}${d.toFixed(1)} جم/يوم عن المرة اللي فاتت)</div>`;
+  } else if(withRate.length===1) sum='<div style="color:var(--muted);font-size:13px;margin:6px 0;">سجّل وزن تاني عشان يظهر لك التزايد أو التناقص.</div>';
+  else sum='<div style="color:var(--danger);font-size:13px;margin:6px 0;">سجّل تاريخ الميلاد الفعلي عشان يتحسب المعدل.</div>';
+  const rows=list.slice().reverse().map((x,i,arr)=>{
+    const prev=arr[i+1];
+    const tr=(x.rate!=null&&prev&&prev.rate!=null)?fatTrendTag(x.rate-prev.rate):'';
+    const ok=x.rate!=null&&x.rate>=target;
+    return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line);">
+      <div><div style="font-weight:700;">${fmtDate(x.date)} · ${x.w} جم</div><div style="font-size:12px;color:var(--muted);">${x.age!=null?'عمرهم '+x.age+' يوم':'—'}</div></div>
+      <div style="text-align:center;"><div style="font-weight:800;color:${x.rate==null?'var(--muted)':ok?'#2E7D5B':'var(--alert)'};">${x.rate!=null?x.rate.toFixed(1)+' جم/يوم':'—'}</div><div style="font-size:12px;">${tr}</div></div>
+      <button class="btn small secondary" onclick="delFatWeight('${f.id}','${x.date}')">✕</button>
+    </div>`;
+  }).join('');
+  return sum+rows;
+}
+function fatLastRateHtml(f){
+  const l=fatRates(f); if(!l.length) return '';
+  const last=l[l.length-1];
+  const r=l.filter(x=>x.rate!=null); const tr=r.length>=2?fatTrendTag(r[r.length-1].rate-r[r.length-2].rate):'';
+  return `<div style="font-size:11px;color:var(--muted);margin-top:3px;">⚖️ ${last.w} جم${last.rate!=null?' · <b>'+last.rate.toFixed(1)+'</b> جم/يوم '+tr:''}</div>`;
+}
+function addFatWeight(id){
+  const f=DB.fattening.find(x=>x.id===id); if(!f) return;
+  const $=k=>document.getElementById(k);
+  const date=$('fw_date').value, w=parseFloat($('fw_w').value);
+  const bd=$('fe_birth').value; if(bd) f.birthDate=bd;
+  if(!f.birthDate){ toast('سجّل تاريخ الميلاد الفعلي الأول'); return; }
+  if(!date||!(w>0)){ toast('اكتب التاريخ والوزن'); return; }
+  f.weights=(f.weights||[]).filter(x=>x.date!==date); f.weights.push({date:date,w:w});
+  f.targetRate=parseFloat($('fe_target').value)||30;
+  saveDB(); $('fw_list').innerHTML=fatWeightsHtml(f); $('fw_w').value=''; render(); toast('تم تسجيل الوزن ✅');
+}
+function delFatWeight(id,date){
+  const f=DB.fattening.find(x=>x.id===id); if(!f) return;
+  if(!confirm('حذف الوزن ده؟')) return;
+  f.weights=(f.weights||[]).filter(x=>x.date!==date); saveDB();
+  const l=document.getElementById('fw_list'); if(l) l.innerHTML=fatWeightsHtml(f); render();
 }
 /* صفحة تعديل الدفعة: بياناتها + تسجيل البيع + الحذف */
 function openFatteningEdit(id){
@@ -1857,6 +1917,16 @@ function openFatteningEdit(id){
     <div class="field-row">
       <div class="field"><label>من عين</label><input id="fe_slot" inputmode="numeric" pattern="[0-9]*" value="${f.slot||''}"></div>
       <div class="field"><label>إلى عين</label><input id="fe_slotTo" inputmode="numeric" pattern="[0-9]*" value="${f.slotTo||''}"></div>
+    </div>
+    <div style="margin-top:14px;padding:14px;border:1.5px solid var(--line);border-radius:12px;">
+      <div style="font-weight:800;margin-bottom:8px;">⚖️ الوزن ومعدل التحويل اليومي</div>
+      <div class="field"><label>الهدف (جم في اليوم)</label><input id="fe_target" type="number" inputmode="decimal" min="0" value="${f.targetRate||30}"></div>
+      <div class="field-row">
+        <div class="field"><label>تاريخ الوزن</label><input id="fw_date" type="date" value="${new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10)}"></div>
+        <div class="field"><label>متوسط وزن الأرنب (جم)</label><input id="fw_w" type="number" inputmode="decimal" min="0" placeholder="مثال: 1400"></div>
+      </div>
+      <button class="btn" style="width:100%;" onclick="addFatWeight('${id}')">+ تسجيل الوزن</button>
+      <div id="fw_list" style="margin-top:8px;">${fatWeightsHtml(f)}</div>
     </div>
     <div style="margin-top:14px;padding:14px;border:1.5px solid var(--primary-tint);border-radius:12px;background:var(--primary-tint);">
       <div style="font-weight:800;margin-bottom:8px;">💰 تسجيل بيع</div>
@@ -1903,6 +1973,7 @@ function saveFatteningEdit(id){
   }
   else { f.count = count; f.startDate = date; }
   f.birthDate = $('fe_birth').value || null;
+  f.targetRate = parseFloat($('fe_target').value)||30;
   f.saleAlertDate = saleDate || null;
   f.line = line; f.slot = slot; f.slotTo = slotTo;
   if(soldNow>0){
