@@ -6,6 +6,7 @@
 <title>خير الطبيعة - إدارة الأرانب</title>
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#4CAF82">
 <style>
@@ -237,6 +238,100 @@ tr:last-child td{border-bottom:none;}
 .ptree{overflow-x:auto;padding:6px 0}.pn{display:flex;align-items:center;gap:8px}.pch{display:flex;flex-direction:column;gap:6px}
 .pb{border:2px solid #cfe0d6;border-radius:10px;padding:6px 10px;min-width:64px;text-align:center;background:#fff;font-size:13px}.pb small{display:block;color:var(--muted)}
 .pb.M{border-color:#3b82f6}.pb.F{border-color:#ec4899}.pb.u{opacity:.5}
+
+/* ================= v5 — الهوية البصرية الجديدة ================= */
+:root{
+  --bg:#EDF1EA; --surface:#FFFFFF; --primary:#2F9E6B; --primary-dark:#17513A; --primary-tint:#E3F1E9;
+  --ink:#14241C; --muted:#64756B; --alert:#9A6A12; --alert-tint:#FBF1DC; --danger:#B8483F; --line:#D8E2DA;
+  --radius:18px; --sh1:0 1px 2px rgba(20,36,28,.06), 0 8px 22px -12px rgba(20,36,28,.18);
+}
+body{font-family:'Cairo','Tajawal',system-ui,sans-serif;background:var(--bg);line-height:1.55;}
+main{padding-top:20px;}
+.topbar h1{font-size:26px;font-weight:900;letter-spacing:-.2px;}
+.topbar p{font-size:14px;margin-top:4px;}
+.topbar-version{opacity:.7;}
+
+/* الشريط العلوي */
+.sidebar{background:linear-gradient(180deg,#143D2C,#17513A);}
+.brand-mark{background:#2F9E6B;box-shadow:0 4px 12px -4px rgba(0,0,0,.4);}
+.nav-item{border-radius:12px;}
+.nav-item.active{background:rgba(255,255,255,.14);box-shadow:inset 3px 0 0 #7FD9AA;}
+@media (max-width:760px){
+  .mobile-brand{background:linear-gradient(135deg,#123828 0%,#1B6246 100%);border-radius:0 0 26px 26px;padding-bottom:16px;font-size:22px;box-shadow:0 10px 24px -14px rgba(10,40,28,.7);}
+  .mobile-brand .ico{background:rgba(255,255,255,.14);border-radius:12px;padding:5px 7px;}
+  main{padding:18px 16px calc(24px + env(safe-area-inset-bottom,0px));}
+}
+
+/* الأزرار */
+.btn{min-height:44px;border-radius:13px;font-weight:800;padding:10px 20px;box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 6px 14px -8px rgba(23,81,58,.8);}
+.btn:hover{background:var(--primary-dark);}
+.btn.secondary,.btn.danger-outline{box-shadow:none;background:#fff;}
+.btn.secondary{color:var(--primary-dark);border:1.5px solid var(--line);}
+.btn.small{min-height:36px;padding:6px 14px;border-radius:11px;}
+.btn.icon-btn{min-width:46px;padding:10px 12px;}
+
+/* الشاشة الرئيسية: أيقونات ملونة */
+.app-grid{gap:12px;}
+.app-tile{border:none;border-radius:22px;padding:18px 6px 14px;gap:10px;box-shadow:var(--sh1);}
+.app-tile-ico{width:58px;height:58px;border-radius:18px;display:grid;place-items:center;font-size:28px;background:var(--primary-tint);}
+.app-tile:nth-child(1) .app-tile-ico{background:#E3F1E9}
+.app-tile:nth-child(2) .app-tile-ico{background:#E2EDF8}
+.app-tile:nth-child(3) .app-tile-ico{background:#FBE5E8}
+.app-tile:nth-child(4) .app-tile-ico{background:#FBF1DC}
+.app-tile:nth-child(5) .app-tile-ico{background:#E7F3D8}
+.app-tile:nth-child(6) .app-tile-ico{background:#ECE6F6}
+.app-tile-lbl{font-size:13px;font-weight:800;}
+.app-tile-count{background:var(--primary-dark);top:10px;left:10px;min-width:22px;text-align:center;box-shadow:0 0 0 3px #fff;}
+
+/* البطاقات والصفوف */
+.mother-row,.rabbit-card,.stat-card,.mini-link-row,.tl-row,.finance-bar,.empty{border:none;box-shadow:var(--sh1);border-radius:var(--radius);}
+.empty{border:1.5px dashed var(--line);box-shadow:none;background:transparent;}
+.mother-row{padding:14px 16px;}
+.mother-row-photo,.detail-photo{border-radius:16px;}
+.mother-row-name{font-size:16.5px;font-weight:900;}
+.mini-link-row{border-radius:16px;}
+.mini-link-row .avatar{border-radius:12px;}
+.tl-row{padding:14px 16px;}
+.tl-row .k{font-weight:600;}
+.section{margin-top:26px;}
+.section-title{font-size:16px;font-weight:900;}
+.loc-group-title{background:var(--primary-dark);color:#fff;border-radius:999px;padding:4px 14px;font-size:12.5px;}
+
+/* الحالات */
+.status-chip,.chip{border-radius:999px;font-weight:800;}
+.status-chip.ok,.chip.ok{background:#DDF1E6;color:#17513A;}
+.status-chip.alert,.chip.alert{background:var(--alert-tint);color:var(--alert);}
+.status-chip::before{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;background:currentColor;margin-left:6px;vertical-align:middle;}
+
+/* التنبيهات */
+.alert-item{border:none;border-radius:18px;background:#fff;box-shadow:var(--sh1);padding:14px 16px;position:relative;overflow:hidden;}
+.alert-item::before{content:'';position:absolute;top:0;bottom:0;right:0;width:5px;background:#D9A441;}
+.alert-item .ico{width:38px;height:38px;flex:0 0 38px;border-radius:12px;display:grid;place-items:center;background:var(--alert-tint);font-size:19px;}
+.alert-item .txt{font-size:14px;}
+.alert-item .date{margin-top:3px;}
+
+/* النماذج */
+.overlay{background:rgba(12,28,20,.55);backdrop-filter:blur(2px);}
+.modal{border-radius:26px;box-shadow:0 30px 70px -20px rgba(8,24,16,.6);}
+.modal::before{content:'';display:block;width:44px;height:4px;border-radius:4px;background:var(--line);margin:-10px auto 16px;}
+.modal h2{font-size:20px;font-weight:900;}
+.field label{font-size:13px;font-weight:800;color:var(--muted);}
+.field input,.field textarea,.field select{min-height:46px;border:1.5px solid var(--line);border-radius:13px;background:#FAFCFA;}
+.field textarea{min-height:76px;}
+.field input:focus,.field textarea:focus,.field select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 4px rgba(47,158,107,.16);background:#fff;}
+.modal-actions{gap:10px;}
+.modal-actions .btn{flex:1;justify-content:center;}
+
+/* الجداول */
+.table-wrap{border-radius:var(--radius);box-shadow:var(--sh1);}
+table{border:none;border-radius:var(--radius);}
+th{background:var(--primary-tint);color:var(--primary-dark);font-size:12px;border-bottom:2px solid #BFDCCB;padding:12px;}
+td{padding:12px;}
+
+.toast{background:var(--primary-dark);border-radius:999px;box-shadow:0 12px 28px -10px rgba(8,24,16,.7);}
+.pb{border-radius:12px;box-shadow:var(--sh1);}
+:focus-visible{outline:3px solid rgba(47,158,107,.55);outline-offset:2px;}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;}}
 </style>
 </head>
 <body>
@@ -268,7 +363,7 @@ tr:last-child td{border-bottom:none;}
         </div>
         <div id="topbarActions"></div>
       </div>
-      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">4.9.6</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
+      <div class="topbar-version">نسخة التطبيق <strong id="appVersion">5.0.0</strong><button id="updateBtn" class="btn small secondary" style="display:none;" onclick="applyUpdate()">تحديث متاح</button></div>
     </div>
     <div id="content"></div>
   </main>
@@ -284,7 +379,7 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 /* ======================= DATA LAYER ======================= */
-const APP_VERSION = '4.9.6';
+const APP_VERSION = '5.0.0';
 const DB_KEY = 'rabbitFarmDB_v1';
 function loadDB(){
   try{
